@@ -1,0 +1,703 @@
+mysql&gt; CREATE DATABASE IF NOT EXISTS swiftspan;
+Query OK, 1 row affected (0.040 sec)
+
+mysql&gt; USE swiftspan;
+Database changed
+mysql&gt;
+mysql&gt; CREATE TABLE sender (
+-&gt; SenderID INT UNSIGNED PRIMARY KEY,
+-&gt; SenderName VARCHAR(60) NOT NULL,
+-&gt; RouteGroup TINYINT UNSIGNED NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.090 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE service (
+-&gt; ServiceID INT UNSIGNED PRIMARY KEY,
+-&gt; ServiceCode CHAR(7) NOT NULL UNIQUE,
+
+-&gt; ServiceName VARCHAR(60) NOT NULL,
+-&gt; VolumeWeight DECIMAL(4,2) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.078 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE coordinator (
+-&gt; CoordinatorID INT UNSIGNED PRIMARY KEY,
+-&gt; CoordinatorName VARCHAR(60) NOT NULL,
+-&gt; Hub CHAR(2) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.057 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE band_policy (
+-&gt; ServiceBand VARCHAR(8) PRIMARY KEY,
+-&gt; RouteFactor DECIMAL(3,2) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.066 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE completion_band (
+-&gt; Completion TINYINT UNSIGNED PRIMARY KEY,
+-&gt; ServiceBand VARCHAR(8) NOT NULL,
+-&gt; CONSTRAINT ck_completion CHECK (Completion BETWEEN 0
+AND 100),
+-&gt; CONSTRAINT fk_cb_band
+-&gt; FOREIGN KEY (ServiceBand)
+-&gt; REFERENCES band_policy(ServiceBand)
+-&gt; ON DELETE RESTRICT
+
+-&gt; );
+Query OK, 0 rows affected (0.079 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE assignment (
+-&gt; SenderID INT UNSIGNED NOT NULL,
+-&gt; ServiceID INT UNSIGNED NOT NULL,
+-&gt; CoordinatorID INT UNSIGNED NOT NULL,
+-&gt; PRIMARY KEY (SenderID, ServiceID),
+-&gt; FOREIGN KEY (SenderID) REFERENCES sender(SenderID) ON
+DELETE RESTRICT,
+-&gt; FOREIGN KEY (ServiceID) REFERENCES service(ServiceID) ON
+DELETE RESTRICT,
+-&gt; FOREIGN KEY (CoordinatorID) REFERENCES
+coordinator(CoordinatorID) ON DELETE RESTRICT
+-&gt; );
+Query OK, 0 rows affected (0.105 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE observation (
+-&gt; SenderID INT UNSIGNED NOT NULL,
+-&gt; ServiceID INT UNSIGNED NOT NULL,
+-&gt; DispatchWave TINYINT UNSIGNED NOT NULL,
+-&gt; Completion TINYINT UNSIGNED NOT NULL,
+-&gt; PRIMARY KEY (SenderID, ServiceID, DispatchWave),
+-&gt; CONSTRAINT ck_obs_completion CHECK (Completion BETWEEN
+0 AND 100),
+-&gt; CONSTRAINT ck_obs_wave CHECK (DispatchWave BETWEEN 1
+AND 4),
+-&gt; FOREIGN KEY (SenderID, ServiceID)
+
+-&gt; REFERENCES assignment(SenderID, ServiceID)
+-&gt; ON DELETE RESTRICT,
+-&gt; FOREIGN KEY (Completion)
+-&gt; REFERENCES completion_band(Completion)
+-&gt; ON DELETE RESTRICT
+-&gt; );
+Query OK, 0 rows affected (0.102 sec)
+
+mysql&gt;
+mysql&gt; CREATE INDEX ix_obs_service ON observation(ServiceID);
+Query OK, 0 rows affected (0.076 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+
+mysql&gt; CREATE INDEX ix_asg_coord ON assignment(CoordinatorID);
+Query OK, 0 rows affected (0.191 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO sender (SenderID, SenderName, RouteGroup)
+VALUES
+-&gt; (1, &#39;Asha Traders&#39;, 1),
+-&gt; (2, &#39;Bright Stores&#39;, 1);
+Query OK, 2 rows affected (0.057 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO service (ServiceID, ServiceCode, ServiceName,
+VolumeWeight) VALUES
+-&gt; (1, &#39;SV00001&#39;, &#39;Express Parcel&#39;, 1.20),
+-&gt; (2, &#39;SV00002&#39;, &#39;Standard Parcel&#39;, 1.00),
+-&gt; (3, &#39;SV00003&#39;, &#39;Document Delivery&#39;, 0.80),
+-&gt; (4, &#39;SV00004&#39;, &#39;Heavy Parcel&#39;, 1.50),
+
+-&gt; (5, &#39;SV00005&#39;, &#39;International Parcel&#39;, 1.80);
+Query OK, 5 rows affected (0.038 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO coordinator (CoordinatorID, CoordinatorName,
+Hub) VALUES
+-&gt; (1, &#39;Ravi Kumar&#39;, &#39;CH&#39;),
+-&gt; (2, &#39;Meena Das&#39;, &#39;BL&#39;);
+Query OK, 2 rows affected (0.034 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO band_policy (ServiceBand, RouteFactor) VALUES
+-&gt; (&#39;Low&#39;, 0.80),
+-&gt; (&#39;Medium&#39;, 1.00),
+-&gt; (&#39;High&#39;, 1.20);
+Query OK, 3 rows affected (0.050 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt;
+mysql&gt; INSERT INTO completion_band (Completion, ServiceBand)
+-&gt; WITH RECURSIVE numbers AS (
+-&gt; SELECT 0 AS Completion
+-&gt; UNION ALL
+-&gt; SELECT Completion + 1
+-&gt; FROM numbers
+-&gt; WHERE Completion &lt; 100
+-&gt; )
+-&gt; SELECT Completion,
+-&gt; CASE
+-&gt; WHEN Completion &lt; 39 THEN &#39;Low&#39;
+
+-&gt; WHEN Completion &lt; 70 THEN &#39;Medium&#39;
+-&gt; ELSE &#39;High&#39;
+-&gt; END
+-&gt; FROM numbers;
+Query OK, 101 rows affected (0.062 sec)
+Records: 101 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO assignment (SenderID, ServiceID, CoordinatorID)
+VALUES
+-&gt; (1, 1, 1),
+-&gt; (1, 2, 1),
+-&gt; (1, 3, 1),
+-&gt; (1, 4, 1),
+-&gt; (1, 5, 1),
+-&gt; (2, 1, 2),
+-&gt; (2, 2, 2),
+-&gt; (2, 3, 2),
+-&gt; (2, 4, 2),
+-&gt; (2, 5, 2);
+Query OK, 10 rows affected (0.048 sec)
+Records: 10 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO observation (SenderID, ServiceID, DispatchWave,
+Completion)
+-&gt; SELECT a.SenderID,
+-&gt; a.ServiceID,
+-&gt; w.DispatchWave,
+-&gt; CASE
+-&gt; WHEN a.SenderID = 1 THEN 50 + a.ServiceID +
+w.DispatchWave
+
+-&gt; ELSE 35 + a.ServiceID + w.DispatchWave
+-&gt; END
+-&gt; FROM assignment AS a
+-&gt; CROSS JOIN (
+-&gt; SELECT 1 AS DispatchWave
+-&gt; UNION ALL SELECT 2
+-&gt; UNION ALL SELECT 3
+-&gt; UNION ALL SELECT 4
+-&gt; ) AS w;
+Query OK, 40 rows affected (0.070 sec)
+Records: 40 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM sender;
++----------+---------------+------------+
+| SenderID | SenderName | RouteGroup |
++----------+---------------+------------+
+| 1 | Asha Traders | 1 |
+| 2 | Bright Stores | 1 |
++----------+---------------+------------+
+2 rows in set (0.027 sec)
+
+mysql&gt; SELECT * FROM service;
++-----------+-------------+----------------------+--------------+
+| ServiceID | ServiceCode | ServiceName | VolumeWeight |
++-----------+-------------+----------------------+--------------+
+| 1 | SV00001 | Express Parcel | 1.20 |
+| 2 | SV00002 | Standard Parcel | 1.00 |
+| 3 | SV00003 | Document Delivery | 0.80 |
+| 4 | SV00004 | Heavy Parcel | 1.50 |
+| 5 | SV00005 | International Parcel | 1.80 |
+
++-----------+-------------+----------------------+--------------+
+5 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM coordinator;
++---------------+-----------------+-----+
+| CoordinatorID | CoordinatorName | Hub |
++---------------+-----------------+-----+
+| 1 | Ravi Kumar | CH |
+| 2 | Meena Das | BL |
++---------------+-----------------+-----+
+2 rows in set (0.007 sec)
+
+mysql&gt; SELECT * FROM band_policy;
++-------------+-------------+
+| ServiceBand | RouteFactor |
++-------------+-------------+
+| High | 1.20 |
+| Low | 0.80 |
+| Medium | 1.00 |
++-------------+-------------+
+3 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM completion_band ORDER BY Completion;
++------------+-------------+
+| Completion | ServiceBand |
++------------+-------------+
+| 0 | Low |
+| 1 | Low |
+| 2 | Low |
+| 3 | Low |
+
+| 4 | Low |
+| 5 | Low |
+| 6 | Low |
+| 7 | Low |
+| 8 | Low |
+| 9 | Low |
+| 10 | Low |
+| 11 | Low |
+| 12 | Low |
+| 13 | Low |
+| 14 | Low |
+| 15 | Low |
+| 16 | Low |
+| 17 | Low |
+| 18 | Low |
+| 19 | Low |
+| 20 | Low |
+| 21 | Low |
+| 22 | Low |
+| 23 | Low |
+| 24 | Low |
+| 25 | Low |
+| 26 | Low |
+| 27 | Low |
+| 28 | Low |
+| 29 | Low |
+| 30 | Low |
+| 31 | Low |
+| 32 | Low |
+| 33 | Low |
+
+| 34 | Low |
+| 35 | Low |
+| 36 | Low |
+| 37 | Low |
+| 38 | Low |
+| 39 | Medium |
+| 40 | Medium |
+| 41 | Medium |
+| 42 | Medium |
+| 43 | Medium |
+| 44 | Medium |
+| 45 | Medium |
+| 46 | Medium |
+| 47 | Medium |
+| 48 | Medium |
+| 49 | Medium |
+| 50 | Medium |
+| 51 | Medium |
+| 52 | Medium |
+| 53 | Medium |
+| 54 | Medium |
+| 55 | Medium |
+| 56 | Medium |
+| 57 | Medium |
+| 58 | Medium |
+| 59 | Medium |
+| 60 | Medium |
+| 61 | Medium |
+| 62 | Medium |
+| 63 | Medium |
+| 64 | Medium |
+| 65 | Medium |
+| 66 | Medium |
+| 67 | Medium |
+| 68 | Medium |
+| 69 | Medium |
+| 70 | High |
+| 71 | High |
+| 72 | High |
+| 73 | High |
+| 74 | High |
+| 75 | High |
+| 76 | High |
+| 77 | High |
+| 78 | High |
+| 79 | High |
+| 80 | High |
+| 81 | High |
+| 82 | High |
+| 83 | High |
+| 84 | High |
+| 85 | High |
+| 86 | High |
+| 87 | High |
+| 88 | High |
+| 89 | High |
+| 90 | High |
+| 91 | High |
+| 92 | High |
+| 93 | High |
+| 94 | High |
+| 95 | High |
+| 96 | High |
+| 97 | High |
+| 98 | High |
+| 99 | High |
+| 100 | High |
++------------+-------------+
+101 rows in set (0.009 sec)
+
+mysql&gt; SELECT * FROM assignment ORDER BY SenderID, ServiceID;
++----------+-----------+---------------+
+| SenderID | ServiceID | CoordinatorID |
++----------+-----------+---------------+
+| 1 | 1 | 1 |
+| 1 | 2 | 1 |
+| 1 | 3 | 1 |
+| 1 | 4 | 1 |
+| 1 | 5 | 1 |
+| 2 | 1 | 2 |
+| 2 | 2 | 2 |
+| 2 | 3 | 2 |
+| 2 | 4 | 2 |
+| 2 | 5 | 2 |
++----------+-----------+---------------+
+10 rows in set (0.007 sec)
+
+mysql&gt; SELECT * FROM observation ORDER BY SenderID, ServiceID,
+DispatchWave;
++----------+-----------+--------------+------------+
+
+| SenderID | ServiceID | DispatchWave | Completion |
++----------+-----------+--------------+------------+
+| 1 | 1 | 1 | 52 |
+| 1 | 1 | 2 | 53 |
+| 1 | 1 | 3 | 54 |
+| 1 | 1 | 4 | 55 |
+| 1 | 2 | 1 | 53 |
+| 1 | 2 | 2 | 54 |
+| 1 | 2 | 3 | 55 |
+| 1 | 2 | 4 | 56 |
+| 1 | 3 | 1 | 54 |
+| 1 | 3 | 2 | 55 |
+| 1 | 3 | 3 | 56 |
+| 1 | 3 | 4 | 57 |
+| 1 | 4 | 1 | 55 |
+| 1 | 4 | 2 | 56 |
+| 1 | 4 | 3 | 57 |
+| 1 | 4 | 4 | 58 |
+| 1 | 5 | 1 | 56 |
+| 1 | 5 | 2 | 57 |
+| 1 | 5 | 3 | 58 |
+| 1 | 5 | 4 | 59 |
+| 2 | 1 | 1 | 37 |
+| 2 | 1 | 2 | 38 |
+| 2 | 1 | 3 | 39 |
+| 2 | 1 | 4 | 40 |
+| 2 | 2 | 1 | 38 |
+| 2 | 2 | 2 | 39 |
+| 2 | 2 | 3 | 40 |
+| 2 | 2 | 4 | 41 |
+| 2 | 3 | 1 | 39 |
+| 2 | 3 | 2 | 40 |
+| 2 | 3 | 3 | 41 |
+| 2 | 3 | 4 | 42 |
+| 2 | 4 | 1 | 40 |
+| 2 | 4 | 2 | 41 |
+| 2 | 4 | 3 | 42 |
+| 2 | 4 | 4 | 43 |
+| 2 | 5 | 1 | 41 |
+| 2 | 5 | 2 | 42 |
+| 2 | 5 | 3 | 43 |
+| 2 | 5 | 4 | 44 |
++----------+-----------+--------------+------------+
+40 rows in set (0.007 sec)
+
+mysql&gt; SELECT o.ServiceID,
+-&gt; v.ServiceCode,
+-&gt; o.Completion,
+-&gt; b.ServiceBand,
+-&gt; p.RouteFactor,
+-&gt; v.VolumeWeight,
+-&gt; ROUND(o.Completion * p.RouteFactor * v.VolumeWeight, 2) AS
+adj_index
+-&gt; FROM observation AS o
+-&gt; JOIN service AS v
+-&gt; ON v.ServiceID = o.ServiceID
+-&gt; JOIN completion_band AS b
+-&gt; ON b.Completion = o.Completion
+-&gt; JOIN band_policy AS p
+-&gt; ON p.ServiceBand = b.ServiceBand
+
+-&gt; WHERE o.SenderID = 1
+-&gt; AND o.DispatchWave = 4
+-&gt; ORDER BY o.ServiceID;
++-----------+-------------+------------+-------------+-------------+--------------+-----------
++
+| ServiceID | ServiceCode | Completion | ServiceBand | RouteFactor |
+VolumeWeight | adj_index |
++-----------+-------------+------------+-------------+-------------+--------------+-----------
++
+| 1 | SV00001 | 55 | Medium | 1.00 | 1.20 | 66.00 |
+| 2 | SV00002 | 56 | Medium | 1.00 | 1.00 | 56.00 |
+| 3 | SV00003 | 57 | Medium | 1.00 | 0.80 | 45.60 |
+| 4 | SV00004 | 58 | Medium | 1.00 | 1.50 | 87.00 |
+| 5 | SV00005 | 59 | Medium | 1.00 | 1.80 | 106.20 |
++-----------+-------------+------------+-------------+-------------+--------------+-----------
++
+5 rows in set (0.014 sec)
+
+mysql&gt; SELECT s.SenderID,
+-&gt; s.SenderName,
+-&gt; s.RouteGroup
+-&gt; FROM sender AS s
+-&gt; JOIN assignment AS a
+-&gt; ON a.SenderID = s.SenderID
+-&gt; LEFT JOIN (
+-&gt; SELECT SenderID, ServiceID, MAX(Completion) AS best
+-&gt; FROM observation
+-&gt; GROUP BY SenderID, ServiceID
+-&gt; ) AS m
+-&gt; ON m.SenderID = a.SenderID
+
+-&gt; AND m.ServiceID = a.ServiceID
+-&gt; GROUP BY s.SenderID, s.SenderName, s.RouteGroup
+-&gt; HAVING COUNT(*) = 5
+-&gt; AND MIN(COALESCE(m.best, -1)) &gt;= 39
+-&gt; ORDER BY s.SenderID;
++----------+---------------+------------+
+| SenderID | SenderName | RouteGroup |
++----------+---------------+------------+
+| 1 | Asha Traders | 1 |
+| 2 | Bright Stores | 1 |
++----------+---------------+------------+
+2 rows in set (0.064 sec)
+
+mysql&gt; SELECT DISTINCT o.SenderID
+-&gt; FROM observation AS o
+-&gt; WHERE o.DispatchWave = 4
+-&gt; AND NOT EXISTS (
+-&gt; SELECT 1
+-&gt; FROM observation AS x
+-&gt; WHERE x.SenderID = o.SenderID
+-&gt; AND x.DispatchWave = 4
+-&gt; AND x.Completion &lt; 39
+-&gt; )
+-&gt; ORDER BY o.SenderID;
++----------+
+| SenderID |
++----------+
+| 1 |
+| 2 |
++----------+
+
+2 rows in set (0.034 sec)
+
+mysql&gt; WITH coordinator_observations AS (
+-&gt; SELECT a.CoordinatorID,
+-&gt; k.Hub,
+-&gt; o.Completion
+-&gt; FROM observation AS o
+-&gt; JOIN assignment AS a
+-&gt; ON a.SenderID = o.SenderID
+-&gt; AND a.ServiceID = o.ServiceID
+-&gt; JOIN coordinator AS k
+-&gt; ON k.CoordinatorID = a.CoordinatorID
+-&gt; ),
+-&gt; coordinator_means AS (
+-&gt; SELECT CoordinatorID,
+-&gt; Hub,
+-&gt; AVG(Completion) AS mean_completion
+-&gt; FROM coordinator_observations
+-&gt; GROUP BY CoordinatorID, Hub
+-&gt; ),
+-&gt; hub_means AS (
+-&gt; SELECT Hub,
+-&gt; AVG(Completion) AS hub_mean
+-&gt; FROM coordinator_observations
+-&gt; GROUP BY Hub
+-&gt; )
+-&gt; SELECT c.CoordinatorID,
+-&gt; ROUND(c.mean_completion, 4) AS coordinator_mean,
+-&gt; ROUND(h.hub_mean, 4) AS hub_mean
+-&gt; FROM coordinator_means AS c
+
+-&gt; JOIN hub_means AS h
+-&gt; ON h.Hub = c.Hub
+-&gt; WHERE c.mean_completion &lt; h.hub_mean
+-&gt; ORDER BY c.CoordinatorID;
+Empty set (0.031 sec)
+
+mysql&gt; SELECT s.SenderID,
+-&gt; s.SenderName
+-&gt; FROM observation AS o
+-&gt; JOIN sender AS s
+-&gt; ON s.SenderID = o.SenderID
+-&gt; WHERE o.Completion &lt; 39
+-&gt; GROUP BY s.SenderID, s.SenderName
+-&gt; HAVING COUNT(DISTINCT o.DispatchWave) &gt;= 3
+-&gt; ORDER BY s.SenderID;
+Empty set (0.014 sec)
+
+mysql&gt; CREATE VIEW v_actor_track AS
+-&gt; SELECT o.SenderID,
+-&gt; s.SenderName,
+-&gt; s.RouteGroup,
+-&gt; o.ServiceID,
+-&gt; v.ServiceCode,
+-&gt; v.ServiceName,
+-&gt; v.VolumeWeight,
+-&gt; o.DispatchWave,
+-&gt; a.CoordinatorID,
+-&gt; k.CoordinatorName,
+-&gt; k.Hub,
+-&gt; o.Completion,
+
+-&gt; b.ServiceBand,
+-&gt; p.RouteFactor
+-&gt; FROM observation AS o
+-&gt; JOIN sender AS s
+-&gt; ON s.SenderID = o.SenderID
+-&gt; JOIN service AS v
+-&gt; ON v.ServiceID = o.ServiceID
+-&gt; JOIN assignment AS a
+-&gt; ON a.SenderID = o.SenderID
+-&gt; AND a.ServiceID = o.ServiceID
+-&gt; JOIN coordinator AS k
+-&gt; ON k.CoordinatorID = a.CoordinatorID
+-&gt; JOIN completion_band AS b
+-&gt; ON b.Completion = o.Completion
+-&gt; JOIN band_policy AS p
+-&gt; ON p.ServiceBand = b.ServiceBand;
+Query OK, 0 rows affected (0.072 sec)
+
+mysql&gt; CREATE VIEW v_hub_operational AS
+-&gt; SELECT k.Hub,
+-&gt; k.CoordinatorID,
+-&gt; k.CoordinatorName,
+-&gt; AVG(o.Completion) AS mean_completion,
+-&gt; COUNT(*) AS observation_count
+-&gt; FROM observation AS o
+-&gt; JOIN assignment AS a
+-&gt; ON a.SenderID = o.SenderID
+-&gt; AND a.ServiceID = o.ServiceID
+-&gt; JOIN coordinator AS k
+-&gt; ON k.CoordinatorID = a.CoordinatorID
+
+-&gt; GROUP BY k.Hub, k.CoordinatorID, k.CoordinatorName;
+Query OK, 0 rows affected (0.047 sec)
+
+mysql&gt; SELECT * FROM v_actor_track;
++----------+---------------+------------+-----------+-------------+----------------------+----
+----------+--------------+---------------+-----------------+-----+------------+-------------+-
+------------+
+| SenderID | SenderName | RouteGroup | ServiceID | ServiceCode |
+ServiceName | VolumeWeight | DispatchWave | CoordinatorID |
+CoordinatorName | Hub | Completion | ServiceBand | RouteFactor |
++----------+---------------+------------+-----------+-------------+----------------------+----
+----------+--------------+---------------+-----------------+-----+------------+-------------+-
+------------+
+| 1 | Asha Traders | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 1 | 1 | Ravi Kumar | CH | 52 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 2 | 1 | Ravi Kumar | CH | 53 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 3 | 1 | Ravi Kumar | CH | 54 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 4 | 1 | Ravi Kumar | CH | 55 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 1 | 1 | Ravi Kumar | CH | 53 | Medium |
+1.00 |
+
+| 1 | Asha Traders | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 2 | 1 | Ravi Kumar | CH | 54 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 3 | 1 | Ravi Kumar | CH | 55 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 4 | 1 | Ravi Kumar | CH | 56 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 1 | 1 | Ravi Kumar | CH | 54 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 2 | 1 | Ravi Kumar | CH | 55 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 3 | 1 | Ravi Kumar | CH | 56 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 4 | 1 | Ravi Kumar | CH | 57 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 1 | 1 | Ravi Kumar | CH | 55 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 2 | 1 | Ravi Kumar | CH | 56 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 3 | 1 | Ravi Kumar | CH | 57 | Medium |
+1.00 |
+
+| 1 | Asha Traders | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 4 | 1 | Ravi Kumar | CH | 58 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 5 | SV00005 | International Parcel |
+1.80 | 1 | 1 | Ravi Kumar | CH | 56 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 5 | SV00005 | International Parcel |
+1.80 | 2 | 1 | Ravi Kumar | CH | 57 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 5 | SV00005 | International Parcel |
+1.80 | 3 | 1 | Ravi Kumar | CH | 58 | Medium |
+1.00 |
+| 1 | Asha Traders | 1 | 5 | SV00005 | International Parcel |
+1.80 | 4 | 1 | Ravi Kumar | CH | 59 | Medium |
+1.00 |
+| 2 | Bright Stores | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 1 | 2 | Meena Das | BL | 37 | Low | 0.80 |
+| 2 | Bright Stores | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 2 | 2 | Meena Das | BL | 38 | Low | 0.80 |
+| 2 | Bright Stores | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 3 | 2 | Meena Das | BL | 39 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 1 | SV00001 | Express Parcel |
+1.20 | 4 | 2 | Meena Das | BL | 40 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 1 | 2 | Meena Das | BL | 38 | Low | 0.80 |
+| 2 | Bright Stores | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 2 | 2 | Meena Das | BL | 39 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 3 | 2 | Meena Das | BL | 40 | Medium | 1.00 |
+
+| 2 | Bright Stores | 1 | 2 | SV00002 | Standard Parcel |
+1.00 | 4 | 2 | Meena Das | BL | 41 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 1 | 2 | Meena Das | BL | 39 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 2 | 2 | Meena Das | BL | 40 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 3 | 2 | Meena Das | BL | 41 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 3 | SV00003 | Document Delivery |
+0.80 | 4 | 2 | Meena Das | BL | 42 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 1 | 2 | Meena Das | BL | 40 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 2 | 2 | Meena Das | BL | 41 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 3 | 2 | Meena Das | BL | 42 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 4 | SV00004 | Heavy Parcel |
+1.50 | 4 | 2 | Meena Das | BL | 43 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 5 | SV00005 | International Parcel |
+1.80 | 1 | 2 | Meena Das | BL | 41 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 5 | SV00005 | International Parcel |
+1.80 | 2 | 2 | Meena Das | BL | 42 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 5 | SV00005 | International Parcel |
+1.80 | 3 | 2 | Meena Das | BL | 43 | Medium | 1.00 |
+| 2 | Bright Stores | 1 | 5 | SV00005 | International Parcel |
+1.80 | 4 | 2 | Meena Das | BL | 44 | Medium | 1.00 |
++----------+---------------+------------+-----------+-------------+----------------------+----
+----------+--------------+---------------+-----------------+-----+------------+-------------+-
+------------+
+40 rows in set (0.025 sec)
+
+mysql&gt; SELECT * FROM v_hub_operational;
++-----+---------------+-----------------+-----------------+-------------------+
+| Hub | CoordinatorID | CoordinatorName | mean_completion |
+observation_count |
++-----+---------------+-----------------+-----------------+-------------------+
+| CH | 1 | Ravi Kumar | 55.5000 | 20 |
+| BL | 2 | Meena Das | 40.5000 | 20 |
++-----+---------------+-----------------+-----------------+-------------------+
+2 rows in set (0.016 sec)
