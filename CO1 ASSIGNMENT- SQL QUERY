@@ -1,0 +1,697 @@
+mysql&gt; CREATE DATABASE meridian_practice_extra;
+Query OK, 1 row affected (0.065 sec)
+
+USE meridian_practice_extra&#39; at line 1
+mysql&gt; USE meridian_practice_extra;
+Database changed
+mysql&gt; SELECT DATABASE();
++-------------------------+
+| DATABASE() |
++-------------------------+
+| meridian_practice_extra |
++-------------------------+
+1 row in set (0.006 sec)
+
+mysql&gt; CREATE DATABASE IF NOT EXISTS meridian_practice_extra;
+Query OK, 1 row affected, 1 warning (0.032 sec)
+
+mysql&gt;
+mysql&gt; USE meridian_practice_extra;
+Database changed
+mysql&gt;
+mysql&gt; SELECT DATABASE();
++-------------------------+
+| DATABASE() |
++-------------------------+
+| meridian_practice_extra |
++-------------------------+
+1 row in set (0.008 sec)
+
+mysql&gt; CREATE TABLE PERSON (
+
+-&gt; person_id INT PRIMARY KEY,
+-&gt; given_name VARCHAR(50) NOT NULL,
+-&gt; family_name VARCHAR(50) NOT NULL,
+-&gt; email VARCHAR(100) UNIQUE
+-&gt; );
+Query OK, 0 rows affected (0.116 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE LENDER (
+-&gt; lender_id INT PRIMARY KEY,
+-&gt; person_id INT NOT NULL UNIQUE,
+-&gt; lender_since DATE,
+-&gt; FOREIGN KEY (person_id) REFERENCES PERSON(person_id)
+-&gt; );
+Query OK, 0 rows affected (0.091 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE ARTIFACT_TYPE (
+-&gt; type_id INT PRIMARY KEY,
+-&gt; type_name VARCHAR(50) NOT NULL UNIQUE
+-&gt; );
+Query OK, 0 rows affected (0.069 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE COLLECTION_UNIT (
+-&gt; unit_id INT PRIMARY KEY,
+-&gt; unit_name VARCHAR(100) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.068 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE ARTIFACT (
+-&gt; artifact_id INT PRIMARY KEY,
+-&gt; catalog_no VARCHAR(30) NOT NULL UNIQUE,
+-&gt; title VARCHAR(100) NOT NULL,
+-&gt; catalog_value DECIMAL(12,2),
+-&gt; type_id INT,
+-&gt; unit_id INT,
+-&gt; current_lender_id INT NOT NULL,
+-&gt; FOREIGN KEY (type_id) REFERENCES ARTIFACT_TYPE(type_id),
+-&gt; FOREIGN KEY (unit_id) REFERENCES COLLECTION_UNIT(unit_id),
+-&gt; FOREIGN KEY (current_lender_id) REFERENCES LENDER(lender_id)
+-&gt; );
+Query OK, 0 rows affected (0.121 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE LOAN (
+-&gt; loan_id INT PRIMARY KEY,
+-&gt; loan_ref VARCHAR(30) NOT NULL UNIQUE,
+-&gt; lender_id INT NOT NULL,
+-&gt; loan_start DATE NOT NULL,
+-&gt; loan_end DATE NOT NULL,
+-&gt; loan_status VARCHAR(20) NOT NULL,
+-&gt; FOREIGN KEY (lender_id) REFERENCES LENDER(lender_id),
+-&gt; CHECK (loan_end &gt; loan_start),
+-&gt; CHECK (loan_status IN (&#39;OPEN&#39;, &#39;CLOSED&#39;))
+-&gt; );
+Query OK, 0 rows affected (0.092 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE LOAN_OBJECT (
+-&gt; loan_id INT,
+-&gt; artifact_id INT,
+-&gt; insured_value DECIMAL(12,2),
+-&gt; received_date DATE NOT NULL,
+-&gt; returned_date DATE,
+-&gt; PRIMARY KEY (loan_id, artifact_id),
+-&gt; FOREIGN KEY (loan_id) REFERENCES LOAN(loan_id),
+-&gt; FOREIGN KEY (artifact_id) REFERENCES ARTIFACT(artifact_id)
+-&gt; );
+Query OK, 0 rows affected (0.098 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE CONDITION_REPORT (
+-&gt; report_id INT PRIMARY KEY,
+-&gt; loan_id INT NOT NULL,
+-&gt; artifact_id INT NOT NULL,
+-&gt; report_type VARCHAR(20),
+-&gt; report_date DATE,
+-&gt; grade VARCHAR(20),
+-&gt; FOREIGN KEY (loan_id, artifact_id)
+-&gt; REFERENCES LOAN_OBJECT(loan_id, artifact_id)
+-&gt; );
+Query OK, 0 rows affected (0.082 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE EXHIBITION (
+
+-&gt; exhibition_id INT PRIMARY KEY,
+-&gt; exh_name VARCHAR(100) NOT NULL,
+-&gt; exh_start DATE NOT NULL,
+-&gt; exh_end DATE NOT NULL,
+-&gt; CHECK (exh_end &gt;= exh_start)
+-&gt; );
+Query OK, 0 rows affected (0.077 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE DISPLAY_SLOT (
+-&gt; exhibition_id INT,
+-&gt; slot_no INT,
+-&gt; loan_id INT NOT NULL,
+-&gt; artifact_id INT NOT NULL,
+-&gt; PRIMARY KEY (exhibition_id, slot_no),
+-&gt; UNIQUE (exhibition_id, loan_id, artifact_id),
+-&gt; FOREIGN KEY (exhibition_id)
+-&gt; REFERENCES EXHIBITION(exhibition_id),
+-&gt; FOREIGN KEY (loan_id, artifact_id)
+-&gt; REFERENCES LOAN_OBJECT(loan_id, artifact_id)
+-&gt; );
+Query OK, 0 rows affected (0.097 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE PERSON_PHONE (
+-&gt; person_id INT,
+-&gt; phone_no VARCHAR(20),
+-&gt; PRIMARY KEY (person_id, phone_no),
+-&gt; FOREIGN KEY (person_id) REFERENCES PERSON(person_id)
+
+-&gt; );
+Query OK, 0 rows affected (0.152 sec)
+
+mysql&gt; INSERT INTO PERSON VALUES
+-&gt; (1, &#39;Arun&#39;, &#39;Kumar&#39;, &#39;arun@gmail.com&#39;),
+-&gt; (2, &#39;Priya&#39;, &#39;Sharma&#39;, &#39;priya@gmail.com&#39;),
+-&gt; (3, &#39;Rahul&#39;, &#39;Raj&#39;, &#39;rahul@gmail.com&#39;),
+-&gt; (4, &#39;Divya&#39;, &#39;S&#39;, &#39;divya@gmail.com&#39;);
+Query OK, 4 rows affected (0.064 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO LENDER VALUES
+-&gt; (1, 1, &#39;2022-01-10&#39;),
+-&gt; (2, 2, &#39;2022-05-15&#39;),
+-&gt; (3, 3, &#39;2023-02-20&#39;),
+-&gt; (4, 4, &#39;2024-03-01&#39;);
+Query OK, 4 rows affected (0.048 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO ARTIFACT_TYPE VALUES
+-&gt; (1, &#39;Painting&#39;),
+-&gt; (2, &#39;Sculpture&#39;),
+-&gt; (3, &#39;Antique&#39;);
+Query OK, 3 rows affected (0.045 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO COLLECTION_UNIT VALUES
+-&gt; (1, &#39;Ancient Art Gallery&#39;),
+-&gt; (2, &#39;Modern Art Gallery&#39;),
+
+-&gt; (3, &#39;Sculpture Gallery&#39;);
+Query OK, 3 rows affected (0.043 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO ARTIFACT VALUES
+-&gt; (101, &#39;MM-001&#39;, &#39;Ancient Painting&#39;, 50000, 1, 1, 1),
+-&gt; (102, &#39;MM-002&#39;, &#39;Bronze Statue&#39;, 75000, 2, 3, 1),
+-&gt; (103, &#39;MM-003&#39;, &#39;Golden Sculpture&#39;, 90000, 2, 3, 2),
+-&gt; (104, &#39;MM-004&#39;, &#39;Antique Vase&#39;, 30000, 3, 2, 3),
+-&gt; (105, &#39;MM-005&#39;, &#39;Modern Painting&#39;, 45000, 1, 2, 4);
+Query OK, 5 rows affected (0.045 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO LOAN VALUES
+-&gt; (201, &#39;LN-001&#39;, 1, &#39;2026-10-01&#39;, &#39;2026-11-10&#39;, &#39;OPEN&#39;),
+-&gt; (202, &#39;LN-002&#39;, 1, &#39;2026-11-01&#39;, &#39;2026-11-20&#39;, &#39;OPEN&#39;),
+-&gt; (203, &#39;LN-003&#39;, 2, &#39;2026-09-01&#39;, &#39;2026-10-15&#39;, &#39;CLOSED&#39;),
+-&gt; (204, &#39;LN-004&#39;, 3, &#39;2026-09-15&#39;, &#39;2026-10-20&#39;, &#39;OPEN&#39;);
+Query OK, 4 rows affected (0.057 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO LOAN_OBJECT VALUES
+-&gt; (201, 101, 50000, &#39;2026-10-01&#39;, NULL),
+-&gt; (201, 103, 90000, &#39;2026-10-01&#39;, NULL),
+-&gt; (202, 101, 52000, &#39;2026-11-01&#39;, NULL),
+-&gt; (203, 102, 75000, &#39;2026-09-01&#39;, &#39;2026-10-15&#39;),
+-&gt; (204, 104, 30000, &#39;2026-09-15&#39;, NULL);
+Query OK, 5 rows affected (0.060 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO CONDITION_REPORT VALUES
+-&gt; (1, 201, 101, &#39;BEFORE&#39;, &#39;2026-10-01&#39;, &#39;GOOD&#39;),
+-&gt; (2, 201, 101, &#39;AFTER&#39;, &#39;2026-10-10&#39;, &#39;GOOD&#39;),
+-&gt; (3, 201, 103, &#39;BEFORE&#39;, &#39;2026-10-01&#39;, &#39;GOOD&#39;),
+-&gt; (4, 202, 101, &#39;BEFORE&#39;, &#39;2026-11-01&#39;, &#39;EXCELLENT&#39;),
+-&gt; (5, 203, 102, &#39;BEFORE&#39;, &#39;2026-09-01&#39;, &#39;GOOD&#39;);
+Query OK, 5 rows affected (0.051 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO EXHIBITION VALUES
+-&gt; (301, &#39;Heritage Exhibition&#39;, &#39;2026-11-01&#39;, &#39;2026-12-01&#39;),
+-&gt; (302, &#39;Art Festival&#39;, &#39;2026-09-01&#39;, &#39;2026-10-30&#39;);
+Query OK, 2 rows affected (0.048 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO DISPLAY_SLOT VALUES
+-&gt; (301, 1, 201, 101),
+-&gt; (301, 2, 201, 103),
+-&gt; (301, 3, 202, 101),
+-&gt; (302, 1, 203, 102);
+Query OK, 4 rows affected (0.061 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO PERSON_PHONE VALUES
+-&gt; (1, &#39;9876543210&#39;),
+-&gt; (1, &#39;9876543211&#39;),
+-&gt; (2, &#39;9876500001&#39;),
+-&gt; (3, &#39;9876500002&#39;),
+
+-&gt; (4, &#39;9876500003&#39;);
+Query OK, 5 rows affected (0.060 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM PERSON;
++-----------+------------+-------------+-----------------+
+| person_id | given_name | family_name | email |
++-----------+------------+-------------+-----------------+
+| 1 | Arun | Kumar | arun@gmail.com |
+| 2 | Priya | Sharma | priya@gmail.com |
+| 3 | Rahul | Raj | rahul@gmail.com |
+| 4 | Divya | S | divya@gmail.com |
++-----------+------------+-------------+-----------------+
+4 rows in set (0.004 sec)
+
+mysql&gt; SELECT * FROM LENDER;
++-----------+-----------+--------------+
+| lender_id | person_id | lender_since |
++-----------+-----------+--------------+
+| 1 | 1 | 2022-01-10 |
+| 2 | 2 | 2022-05-15 |
+| 3 | 3 | 2023-02-20 |
+| 4 | 4 | 2024-03-01 |
++-----------+-----------+--------------+
+4 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM ARTIFACT;
++-------------+------------+------------------+---------------+---------+---------+-------------------+
+| artifact_id | catalog_no | title | catalog_value | type_id | unit_id | current_lender_id |
+
++-------------+------------+------------------+---------------+---------+---------+-------------------+
+| 101 | MM-001 | Ancient Painting | 50000.00 | 1 | 1 | 1 |
+| 102 | MM-002 | Bronze Statue | 75000.00 | 2 | 3 | 1 |
+| 103 | MM-003 | Golden Sculpture | 90000.00 | 2 | 3 | 2 |
+| 104 | MM-004 | Antique Vase | 30000.00 | 3 | 2 | 3 |
+| 105 | MM-005 | Modern Painting | 45000.00 | 1 | 2 | 4 |
++-------------+------------+------------------+---------------+---------+---------+-------------------+
+5 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM LOAN;
++---------+----------+-----------+------------+------------+-------------+
+| loan_id | loan_ref | lender_id | loan_start | loan_end | loan_status |
++---------+----------+-----------+------------+------------+-------------+
+| 201 | LN-001 | 1 | 2026-10-01 | 2026-11-10 | OPEN |
+| 202 | LN-002 | 1 | 2026-11-01 | 2026-11-20 | OPEN |
+| 203 | LN-003 | 2 | 2026-09-01 | 2026-10-15 | CLOSED |
+| 204 | LN-004 | 3 | 2026-09-15 | 2026-10-20 | OPEN |
++---------+----------+-----------+------------+------------+-------------+
+4 rows in set (0.010 sec)
+
+mysql&gt; SELECT * FROM LOAN_OBJECT;
++---------+-------------+---------------+---------------+---------------+
+| loan_id | artifact_id | insured_value | received_date | returned_date |
++---------+-------------+---------------+---------------+---------------+
+| 201 | 101 | 50000.00 | 2026-10-01 | NULL |
+| 201 | 103 | 90000.00 | 2026-10-01 | NULL |
+| 202 | 101 | 52000.00 | 2026-11-01 | NULL |
+| 203 | 102 | 75000.00 | 2026-09-01 | 2026-10-15 |
+| 204 | 104 | 30000.00 | 2026-09-15 | NULL |
+
++---------+-------------+---------------+---------------+---------------+
+5 rows in set (0.005 sec)
+
+mysql&gt; SELECT * FROM CONDITION_REPORT;
++-----------+---------+-------------+-------------+-------------+-----------+
+| report_id | loan_id | artifact_id | report_type | report_date | grade |
++-----------+---------+-------------+-------------+-------------+-----------+
+| 1 | 201 | 101 | BEFORE | 2026-10-01 | GOOD |
+| 2 | 201 | 101 | AFTER | 2026-10-10 | GOOD |
+| 3 | 201 | 103 | BEFORE | 2026-10-01 | GOOD |
+| 4 | 202 | 101 | BEFORE | 2026-11-01 | EXCELLENT |
+| 5 | 203 | 102 | BEFORE | 2026-09-01 | GOOD |
++-----------+---------+-------------+-------------+-------------+-----------+
+5 rows in set (0.005 sec)
+
+mysql&gt; SELECT * FROM EXHIBITION;
++---------------+---------------------+------------+------------+
+| exhibition_id | exh_name | exh_start | exh_end |
++---------------+---------------------+------------+------------+
+| 301 | Heritage Exhibition | 2026-11-01 | 2026-12-01 |
+| 302 | Art Festival | 2026-09-01 | 2026-10-30 |
++---------------+---------------------+------------+------------+
+2 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM DISPLAY_SLOT;
++---------------+---------+---------+-------------+
+| exhibition_id | slot_no | loan_id | artifact_id |
++---------------+---------+---------+-------------+
+| 301 | 1 | 201 | 101 |
+
+| 301 | 2 | 201 | 103 |
+| 301 | 3 | 202 | 101 |
+| 302 | 1 | 203 | 102 |
++---------------+---------+---------+-------------+
+4 rows in set (0.005 sec)
+
+mysql&gt; SELECT * FROM PERSON_PHONE;
++-----------+------------+
+| person_id | phone_no |
++-----------+------------+
+| 1 | 9876543210 |
+| 1 | 9876543211 |
+| 2 | 9876500001 |
+| 3 | 9876500002 |
+| 4 | 9876500003 |
++-----------+------------+
+5 rows in set (0.005 sec)
+
+mysql&gt; SELECT &#39;PERSON&#39; AS Table_Name, COUNT(*) AS Total_Records FROM
+PERSON
+-&gt; UNION ALL
+-&gt; SELECT &#39;LENDER&#39;, COUNT(*) FROM LENDER
+-&gt; UNION ALL
+-&gt; SELECT &#39;ARTIFACT&#39;, COUNT(*) FROM ARTIFACT
+-&gt; UNION ALL
+-&gt; SELECT &#39;LOAN&#39;, COUNT(*) FROM LOAN
+-&gt; UNION ALL
+-&gt; SELECT &#39;LOAN_OBJECT&#39;, COUNT(*) FROM LOAN_OBJECT
+-&gt; UNION ALL
+-&gt; SELECT &#39;CONDITION_REPORT&#39;, COUNT(*) FROM CONDITION_REPORT;
+
++------------------+---------------+
+| Table_Name | Total_Records |
++------------------+---------------+
+| PERSON | 4 |
+| LENDER | 4 |
+| ARTIFACT | 5 |
+| LOAN | 4 |
+| LOAN_OBJECT | 5 |
+| CONDITION_REPORT | 5 |
++------------------+---------------+
+6 rows in set (0.041 sec)
+
+mysql&gt; SELECT loan_id, loan_ref, lender_id, loan_end
+-&gt; FROM LOAN
+-&gt; WHERE loan_status = &#39;OPEN&#39;
+-&gt; AND loan_end &lt; &#39;2026-11-04&#39;;
++---------+----------+-----------+------------+
+| loan_id | loan_ref | lender_id | loan_end |
++---------+----------+-----------+------------+
+| 204 | LN-004 | 3 | 2026-10-20 |
++---------+----------+-----------+------------+
+1 row in set (0.028 sec)
+
+mysql&gt; SELECT a.artifact_id, a.title
+-&gt; FROM ARTIFACT a
+-&gt; LEFT JOIN LOAN_OBJECT lo
+-&gt; ON a.artifact_id = lo.artifact_id
+-&gt; LEFT JOIN CONDITION_REPORT cr
+-&gt; ON lo.loan_id = cr.loan_id
+
+-&gt; AND lo.artifact_id = cr.artifact_id
+-&gt; WHERE cr.report_id IS NULL;
++-------------+-----------------+
+| artifact_id | title |
++-------------+-----------------+
+| 104 | Antique Vase |
+| 105 | Modern Painting |
++-------------+-----------------+
+2 rows in set (0.009 sec)
+
+mysql&gt; SELECT l.loan_id, l.loan_ref,
+-&gt; COUNT(lo.artifact_id) AS Total_Artifacts
+-&gt; FROM LOAN l
+-&gt; JOIN LOAN_OBJECT lo
+-&gt; ON l.loan_id = lo.loan_id
+-&gt; GROUP BY l.loan_id, l.loan_ref
+-&gt; HAVING COUNT(lo.artifact_id) &gt;= 4;
+Empty set (0.009 sec)
+
+mysql&gt; SELECT lo.loan_id, a.artifact_id, a.title,
+-&gt; lo.received_date, lo.returned_date
+-&gt; FROM LOAN_OBJECT lo
+-&gt; JOIN LOAN l ON lo.loan_id = l.loan_id
+-&gt; JOIN ARTIFACT a ON lo.artifact_id = a.artifact_id
+-&gt; WHERE &#39;2026-11-04&#39; BETWEEN l.loan_start AND l.loan_end
+-&gt; AND lo.returned_date IS NULL;
++---------+-------------+------------------+---------------+---------------+
+| loan_id | artifact_id | title | received_date | returned_date |
++---------+-------------+------------------+---------------+---------------+
+
+| 201 | 101 | Ancient Painting | 2026-10-01 | NULL |
+| 201 | 103 | Golden Sculpture | 2026-10-01 | NULL |
+| 202 | 101 | Ancient Painting | 2026-11-01 | NULL |
++---------+-------------+------------------+---------------+---------------+
+3 rows in set (0.039 sec)
+
+mysql&gt; SELECT e.exh_name, ds.slot_no,
+-&gt; a.artifact_id, a.title, l.loan_ref
+-&gt; FROM DISPLAY_SLOT ds
+-&gt; JOIN EXHIBITION e
+-&gt; ON ds.exhibition_id = e.exhibition_id
+-&gt; JOIN LOAN_OBJECT lo
+-&gt; ON ds.loan_id = lo.loan_id
+-&gt; AND ds.artifact_id = lo.artifact_id
+-&gt; JOIN ARTIFACT a
+-&gt; ON ds.artifact_id = a.artifact_id
+-&gt; JOIN LOAN l
+-&gt; ON ds.loan_id = l.loan_id
+-&gt; ORDER BY e.exhibition_id, ds.slot_no;
++---------------------+---------+-------------+------------------+----------+
+| exh_name | slot_no | artifact_id | title | loan_ref |
++---------------------+---------+-------------+------------------+----------+
+| Heritage Exhibition | 1 | 101 | Ancient Painting | LN-001 |
+| Heritage Exhibition | 2 | 103 | Golden Sculpture | LN-001 |
+| Heritage Exhibition | 3 | 101 | Ancient Painting | LN-002 |
+| Art Festival | 1 | 102 | Bronze Statue | LN-003 |
++---------------------+---------+-------------+------------------+----------+
+4 rows in set (0.014 sec)
+
+mysql&gt; SELECT a.artifact_id, a.title,
+-&gt; COUNT(DISTINCT lo.loan_id) AS Number_Of_Loans
+-&gt; FROM ARTIFACT a
+-&gt; JOIN LOAN_OBJECT lo
+-&gt; ON a.artifact_id = lo.artifact_id
+-&gt; GROUP BY a.artifact_id, a.title
+-&gt; HAVING COUNT(DISTINCT lo.loan_id) &gt;= 2;
++-------------+------------------+-----------------+
+| artifact_id | title | Number_Of_Loans |
++-------------+------------------+-----------------+
+| 101 | Ancient Painting | 2 |
++-------------+------------------+-----------------+
+1 row in set (0.019 sec)
+
+mysql&gt; SELECT l.loan_id, l.loan_ref,
+-&gt; e.exh_name, l.loan_end, e.exh_end
+-&gt; FROM LOAN l
+-&gt; JOIN DISPLAY_SLOT ds
+-&gt; ON l.loan_id = ds.loan_id
+-&gt; JOIN EXHIBITION e
+-&gt; ON ds.exhibition_id = e.exhibition_id
+-&gt; WHERE l.loan_end &lt; e.exh_end;
++---------+----------+---------------------+------------+------------+
+| loan_id | loan_ref | exh_name | loan_end | exh_end |
++---------+----------+---------------------+------------+------------+
+| 201 | LN-001 | Heritage Exhibition | 2026-11-10 | 2026-12-01 |
+| 201 | LN-001 | Heritage Exhibition | 2026-11-10 | 2026-12-01 |
+| 202 | LN-002 | Heritage Exhibition | 2026-11-20 | 2026-12-01 |
+| 203 | LN-003 | Art Festival | 2026-10-15 | 2026-10-30 |
+
++---------+----------+---------------------+------------+------------+
+4 rows in set (0.010 sec)
+
+mysql&gt; SELECT ds.exhibition_id, ds.slot_no,
+-&gt; a.artifact_id,
+-&gt; a.current_lender_id AS Artifact_Owner,
+-&gt; l.lender_id AS Loan_Lender
+-&gt; FROM DISPLAY_SLOT ds
+-&gt; JOIN LOAN l
+-&gt; ON ds.loan_id = l.loan_id
+-&gt; JOIN ARTIFACT a
+-&gt; ON ds.artifact_id = a.artifact_id
+-&gt; WHERE a.current_lender_id &lt;&gt; l.lender_id;
++---------------+---------+-------------+----------------+-------------+
+| exhibition_id | slot_no | artifact_id | Artifact_Owner | Loan_Lender |
++---------------+---------+-------------+----------------+-------------+
+| 301 | 2 | 103 | 2 | 1 |
+| 302 | 1 | 102 | 1 | 2 |
++---------------+---------+-------------+----------------+-------------+
+2 rows in set (0.011 sec)
+
+mysql&gt; INSERT INTO ARTIFACT VALUES
+-&gt; (106, &#39;MM-001&#39;, &#39;Duplicate Painting&#39;, 20000, 1, 1, 1);
+ERROR 1062 (23000): Duplicate entry &#39;MM-001&#39; for key &#39;artifact.catalog_no&#39;
+mysql&gt; INSERT INTO ARTIFACT VALUES
+-&gt; (107, &#39;MM-007&#39;, &#39;Unknown Owner Painting&#39;, 25000, 1, 1, 99);
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails
+(`meridian_practice_extra`.`artifact`, CONSTRAINT `artifact_ibfk_3` FOREIGN KEY
+(`current_lender_id`) REFERENCES `lender` (`lender_id`))
+mysql&gt; INSERT INTO LOAN VALUES
+
+-&gt; (205, &#39;LN-005&#39;, 1, &#39;2026-11-20&#39;, &#39;2026-11-10&#39;, &#39;OPEN&#39;);
+ERROR 3819 (HY000): Check constraint &#39;loan_chk_1&#39; is violated.
+mysql&gt; INSERT INTO LOAN VALUES
+-&gt; (206, &#39;LN-006&#39;, 1, &#39;2026-11-01&#39;, &#39;2026-11-30&#39;, &#39;PENDING&#39;);
+ERROR 3819 (HY000): Check constraint &#39;loan_chk_2&#39; is violated.
+mysql&gt; CREATE TABLE ARTIFACT_OWNER (
+-&gt; artifact_id INT,
+-&gt; owner_id INT,
+-&gt; share_pct DECIMAL(5,2) NOT NULL,
+-&gt; valid_from DATE NOT NULL,
+-&gt; valid_to DATE,
+-&gt; PRIMARY KEY (artifact_id, owner_id, valid_from),
+-&gt; FOREIGN KEY (artifact_id) REFERENCES ARTIFACT(artifact_id),
+-&gt; FOREIGN KEY (owner_id) REFERENCES LENDER(lender_id),
+-&gt; CHECK (share_pct &gt; 0 AND share_pct &lt;= 100)
+-&gt; );
+Query OK, 0 rows affected (0.230 sec)
+
+mysql&gt; INSERT INTO ARTIFACT_OWNER
+-&gt; (artifact_id, owner_id, share_pct, valid_from, valid_to)
+-&gt; SELECT artifact_id, current_lender_id, 100.00,
+-&gt; &#39;2026-01-01&#39;, NULL
+-&gt; FROM ARTIFACT;
+Query OK, 5 rows affected (0.073 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM ARTIFACT_OWNER;
++-------------+----------+-----------+------------+----------+
+| artifact_id | owner_id | share_pct | valid_from | valid_to |
+
++-------------+----------+-----------+------------+----------+
+| 101 | 1 | 100.00 | 2026-01-01 | NULL |
+| 102 | 1 | 100.00 | 2026-01-01 | NULL |
+| 103 | 2 | 100.00 | 2026-01-01 | NULL |
+| 104 | 3 | 100.00 | 2026-01-01 | NULL |
+| 105 | 4 | 100.00 | 2026-01-01 | NULL |
++-------------+----------+-----------+------------+----------+
+5 rows in set (0.003 sec)
+
+mysql&gt; UPDATE ARTIFACT_OWNER
+-&gt; SET valid_to = &#39;2026-11-03&#39;
+-&gt; WHERE artifact_id = 101
+-&gt; AND valid_to IS NULL;
+Query OK, 1 row affected (0.044 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+
+mysql&gt; INSERT INTO ARTIFACT_OWNER VALUES
+-&gt; (101, 1, 60.00, &#39;2026-11-04&#39;, NULL),
+-&gt; (101, 2, 40.00, &#39;2026-11-04&#39;, NULL);
+Query OK, 2 rows affected (0.029 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT artifact_id,
+-&gt; SUM(share_pct) AS Total_Ownership
+-&gt; FROM ARTIFACT_OWNER
+-&gt; WHERE valid_to IS NULL
+-&gt; GROUP BY artifact_id;
++-------------+-----------------+
+| artifact_id | Total_Ownership |
+
+
++-------------+-----------------+
+| 101 | 100.00 |
+| 102 | 100.00 |
+| 103 | 100.00 |
+| 104 | 100.00 |
+| 105 | 100.00 |
++-------------+-----------------+
+5 rows in set (0.010 sec)
+
+mysql&gt; SELECT artifact_id,
+-&gt; SUM(share_pct) AS Total_Share
+-&gt; FROM ARTIFACT_OWNER
+-&gt; WHERE valid_to IS NULL
+-&gt; GROUP BY artifact_id
+-&gt; HAVING SUM(share_pct) &lt;&gt; 100;
+Empty set (0.009 sec)
+
+mysql&gt; SELECT * FROM LOAN;
++---------+----------+-----------+------------+------------+-------------+
+| loan_id | loan_ref | lender_id | loan_start | loan_end | loan_status |
++---------+----------+-----------+------------+------------+-------------+
+| 201 | LN-001 | 1 | 2026-10-01 | 2026-11-10 | OPEN |
+| 202 | LN-002 | 1 | 2026-11-01 | 2026-11-20 | OPEN |
+| 203 | LN-003 | 2 | 2026-09-01 | 2026-10-15 | CLOSED |
+| 204 | LN-004 | 3 | 2026-09-15 | 2026-10-20 | OPEN |
++---------+----------+-----------+------------+------------+-------------+
+4 rows in set (0.009 sec)
+
+mysql&gt;
+
+mysql&gt; SELECT * FROM LOAN_OBJECT;
++---------+-------------+---------------+---------------+---------------+
+| loan_id | artifact_id | insured_value | received_date | returned_date |
++---------+-------------+---------------+---------------+---------------+
+| 201 | 101 | 50000.00 | 2026-10-01 | NULL |
+| 201 | 103 | 90000.00 | 2026-10-01 | NULL |
+| 202 | 101 | 52000.00 | 2026-11-01 | NULL |
+| 203 | 102 | 75000.00 | 2026-09-01 | 2026-10-15 |
+| 204 | 104 | 30000.00 | 2026-09-15 | NULL |
++---------+-------------+---------------+---------------+---------------+
+5 rows in set (0.004 sec)
+
+mysql&gt;
+mysql&gt; SELECT * FROM CONDITION_REPORT;
++-----------+---------+-------------+-------------+-------------+-----------+
+| report_id | loan_id | artifact_id | report_type | report_date | grade |
++-----------+---------+-------------+-------------+-------------+-----------+
+| 1 | 201 | 101 | BEFORE | 2026-10-01 | GOOD |
+| 2 | 201 | 101 | AFTER | 2026-10-10 | GOOD |
+| 3 | 201 | 103 | BEFORE | 2026-10-01 | GOOD |
+| 4 | 202 | 101 | BEFORE | 2026-11-01 | EXCELLENT |
+| 5 | 203 | 102 | BEFORE | 2026-09-01 | GOOD |
++-----------+---------+-------------+-------------+-------------+-----------+
+5 rows in set (0.007 sec)
+
+mysql&gt; SHOW TABLES;
++-----------------------------------+
+| Tables_in_meridian_practice_extra |
++-----------------------------------+
+
+| artifact |
+| artifact_owner |
+| artifact_type |
+| collection_unit |
+| condition_report |
+| display_slot |
+| exhibition |
+| lender |
+| loan |
+| loan_object |
+| person |
+| person_phone |
++-----------------------------------+
+12 rows in set (0.076 sec)
+
+mysql&gt; SELECT COUNT(*) AS Total_Artifacts
+-&gt; FROM ARTIFACT;
++-----------------+
+| Total_Artifacts |
++-----------------+
+| 5 |
++-----------------+
+1 row in set (0.007 sec)
+
+mysql&gt;
+mysql&gt; SELECT COUNT(*) AS Total_Loans
+-&gt; FROM LOAN;
++-------------+
+| Total_Loans |
+
+
++-------------+
+| 4 |
++-------------+
+1 row in set (0.004 sec)
+
+mysql&gt;
+mysql&gt; SELECT COUNT(*) AS Total_Loan_Objects
+-&gt; FROM LOAN_OBJECT;
++--------------------+
+| Total_Loan_Objects |
++--------------------+
+| 5 |
++--------------------+
+1 row in set (0.003 sec)
+
+mysql&gt;
+mysql&gt; SELECT COUNT(*) AS Total_Condition_Reports
+-&gt; FROM CONDITION_REPORT;
++-------------------------+
+| Total_Condition_Reports |
++-------------------------+
+| 5 |
++-------------------------+
+1 row in set (0.004 sec)
+
+mysql&gt;
+mysql&gt; SELECT COUNT(*) AS Total_Ownership_Records
+-&gt; FROM ARTIFACT_OWNER;
++-------------------------+
+
+
+| Total_Ownership_Records |
++-------------------------+
+| 7 |
++-------------------------+
+1 row in set (0.008 sec)
