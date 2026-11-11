@@ -1,0 +1,464 @@
+mysql&gt; CREATE DATABASE IF NOT EXISTS bank_txn_db;
+Query OK, 1 row affected (0.057 sec)
+
+mysql&gt; USE bank_txn_db;
+Database changed
+mysql&gt;
+mysql&gt; DROP TABLE IF EXISTS TXN;
+Query OK, 0 rows affected, 1 warning (0.017 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE TXN (
+-&gt; TxnID BIGINT UNSIGNED NOT NULL,
+-&gt; AccountNo VARCHAR(12) NOT NULL,
+-&gt; TxnTime DATETIME NOT NULL,
+-&gt; Type VARCHAR(10) NOT NULL,
+-&gt; Amount DECIMAL(15,2) NOT NULL,
+-&gt; Branch VARCHAR(20) NOT NULL,
+-&gt; Channel VARCHAR(10) NOT NULL,
+-&gt; Narration VARCHAR(80),
+-&gt; Balance DECIMAL(15,2) NOT NULL,
+-&gt; OtherInfo VARCHAR(45),
+-&gt; PRIMARY KEY (TxnID),
+-&gt; INDEX idx_account_time (AccountNo, TxnTime),
+-&gt; INDEX idx_branch_time (Branch, TxnTime),
+-&gt; INDEX idx_txntime (TxnTime)
+-&gt; ) ENGINE = InnoDB;
+Query OK, 0 rows affected (0.203 sec)
+
+mysql&gt; INSERT INTO TXN
+-&gt; (TxnID, AccountNo, TxnTime, Type, Amount, Branch,
+-&gt; Channel, Narration, Balance, OtherInfo)
+-&gt; VALUES
+-&gt; (1001, &#39;AC10001&#39;, &#39;2026-11-10 09:00:00&#39;, &#39;CREDIT&#39;, 5000.00,
+&#39;Chennai&#39;, &#39;UPI&#39;, &#39;Salary credit&#39;, 25000.00, &#39;Sample transaction&#39;),
+-&gt; (1002, &#39;AC10002&#39;, &#39;2026-11-10 09:05:00&#39;, &#39;DEBIT&#39;, 250.00,
+&#39;Bengaluru&#39;, &#39;CARD&#39;, &#39;Grocery purchase&#39;, 14750.00, &#39;Sample transaction&#39;),
+-&gt; (1003, &#39;AC10001&#39;, &#39;2026-11-10 09:10:00&#39;, &#39;DEBIT&#39;, 1200.00,
+&#39;Chennai&#39;, &#39;UPI&#39;, &#39;Utility payment&#39;, 23800.00, &#39;Sample transaction&#39;),
+-&gt; (1004, &#39;AC10003&#39;, &#39;2026-11-10 09:15:00&#39;, &#39;CREDIT&#39;, 800.00,
+&#39;Mumbai&#39;, &#39;NEFT&#39;, &#39;Transfer received&#39;, 10800.00, &#39;Sample transaction&#39;),
+-&gt; (1005, &#39;AC10002&#39;, &#39;2026-11-10 09:20:00&#39;, &#39;DEBIT&#39;, 150.00,
+&#39;Bengaluru&#39;, &#39;UPI&#39;, &#39;Food payment&#39;, 14600.00, &#39;Sample transaction&#39;),
+
+-&gt; (1006, &#39;AC10004&#39;, &#39;2026-11-10 10:00:00&#39;, &#39;CREDIT&#39;, 2500.00,
+&#39;Chennai&#39;, &#39;IMPS&#39;, &#39;Funds received&#39;, 32500.00, &#39;Sample transaction&#39;),
+-&gt; (1007, &#39;AC10001&#39;, &#39;2026-11-10 10:05:00&#39;, &#39;DEBIT&#39;, 300.00, &#39;Chennai&#39;,
+&#39;CARD&#39;, &#39;Fuel purchase&#39;, 23500.00, &#39;Sample transaction&#39;),
+-&gt; (1008, &#39;AC10003&#39;, &#39;2026-11-10 10:10:00&#39;, &#39;DEBIT&#39;, 400.00, &#39;Mumbai&#39;,
+&#39;UPI&#39;, &#39;Online purchase&#39;, 10400.00, &#39;Sample transaction&#39;),
+-&gt; (1009, &#39;AC10005&#39;, &#39;2026-11-10 10:15:00&#39;, &#39;CREDIT&#39;, 1500.00, &#39;Delhi&#39;,
+&#39;NEFT&#39;, &#39;Transfer received&#39;, 21500.00, &#39;Sample transaction&#39;),
+-&gt; (1010, &#39;AC10002&#39;, &#39;2026-11-10 10:20:00&#39;, &#39;DEBIT&#39;, 600.00,
+&#39;Bengaluru&#39;, &#39;UPI&#39;, &#39;Shopping payment&#39;, 14000.00, &#39;Sample transaction&#39;),
+-&gt; (1011, &#39;AC10004&#39;, &#39;2026-11-10 11:00:00&#39;, &#39;DEBIT&#39;, 750.00, &#39;Chennai&#39;,
+&#39;UPI&#39;, &#39;Electricity bill&#39;, 31750.00, &#39;Sample transaction&#39;),
+-&gt; (1012, &#39;AC10005&#39;, &#39;2026-11-10 11:05:00&#39;, &#39;CREDIT&#39;, 2000.00, &#39;Delhi&#39;,
+&#39;IMPS&#39;, &#39;Cashback&#39;, 23500.00, &#39;Sample transaction&#39;),
+-&gt; (1013, &#39;AC10006&#39;, &#39;2026-11-10 11:10:00&#39;, &#39;DEBIT&#39;, 450.00,
+&#39;Hyderabad&#39;, &#39;CARD&#39;, &#39;Pharmacy purchase&#39;, 9550.00, &#39;Sample
+transaction&#39;),
+-&gt; (1014, &#39;AC10001&#39;, &#39;2026-11-10 11:15:00&#39;, &#39;CREDIT&#39;, 900.00,
+&#39;Chennai&#39;, &#39;NEFT&#39;, &#39;Transfer received&#39;, 24400.00, &#39;Sample transaction&#39;),
+-&gt; (1015, &#39;AC10006&#39;, &#39;2026-11-10 11:20:00&#39;, &#39;DEBIT&#39;, 100.00,
+&#39;Hyderabad&#39;, &#39;UPI&#39;, &#39;Tea shop payment&#39;, 9450.00, &#39;Sample transaction&#39;);
+Query OK, 15 rows affected (0.033 sec)
+Records: 15 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM TXN ORDER BY TxnID;
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch |
+Channel | Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+| 1001 | AC10001 | 2026-11-10 09:00:00 | CREDIT | 5000.00 | Chennai | UPI
+| Salary credit | 25000.00 | Sample transaction |
+| 1002 | AC10002 | 2026-11-10 09:05:00 | DEBIT | 250.00 | Bengaluru |
+CARD | Grocery purchase | 14750.00 | Sample transaction |
+| 1003 | AC10001 | 2026-11-10 09:10:00 | DEBIT | 1200.00 | Chennai | UPI
+| Utility payment | 23800.00 | Sample transaction |
+| 1004 | AC10003 | 2026-11-10 09:15:00 | CREDIT | 800.00 | Mumbai |
+NEFT | Transfer received | 10800.00 | Sample transaction |
+| 1005 | AC10002 | 2026-11-10 09:20:00 | DEBIT | 150.00 | Bengaluru | UPI
+| Food payment | 14600.00 | Sample transaction |
+| 1006 | AC10004 | 2026-11-10 10:00:00 | CREDIT | 2500.00 | Chennai |
+IMPS | Funds received | 32500.00 | Sample transaction |
+| 1007 | AC10001 | 2026-11-10 10:05:00 | DEBIT | 300.00 | Chennai |
+CARD | Fuel purchase | 23500.00 | Sample transaction |
+| 1008 | AC10003 | 2026-11-10 10:10:00 | DEBIT | 400.00 | Mumbai | UPI
+| Online purchase | 10400.00 | Sample transaction |
+| 1009 | AC10005 | 2026-11-10 10:15:00 | CREDIT | 1500.00 | Delhi | NEFT
+| Transfer received | 21500.00 | Sample transaction |
+| 1010 | AC10002 | 2026-11-10 10:20:00 | DEBIT | 600.00 | Bengaluru | UPI
+| Shopping payment | 14000.00 | Sample transaction |
+| 1011 | AC10004 | 2026-11-10 11:00:00 | DEBIT | 750.00 | Chennai | UPI
+| Electricity bill | 31750.00 | Sample transaction |
+| 1012 | AC10005 | 2026-11-10 11:05:00 | CREDIT | 2000.00 | Delhi | IMPS
+| Cashback | 23500.00 | Sample transaction |
+
+| 1013 | AC10006 | 2026-11-10 11:10:00 | DEBIT | 450.00 | Hyderabad |
+CARD | Pharmacy purchase | 9550.00 | Sample transaction |
+| 1014 | AC10001 | 2026-11-10 11:15:00 | CREDIT | 900.00 | Chennai |
+NEFT | Transfer received | 24400.00 | Sample transaction |
+| 1015 | AC10006 | 2026-11-10 11:20:00 | DEBIT | 100.00 | Hyderabad | UPI
+| Tea shop payment | 9450.00 | Sample transaction |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+15 rows in set (0.006 sec)
+
+mysql&gt; SELECT *
+-&gt; FROM TXN
+-&gt; WHERE TxnID = 1003;
++-------+-----------+---------------------+-------+---------+---------+---------+-------------
+----+----------+--------------------+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch | Channel |
+Narration | Balance | OtherInfo |
++-------+-----------+---------------------+-------+---------+---------+---------+-------------
+----+----------+--------------------+
+| 1003 | AC10001 | 2026-11-10 09:10:00 | DEBIT | 1200.00 | Chennai | UPI
+| Utility payment | 23800.00 | Sample transaction |
++-------+-----------+---------------------+-------+---------+---------+---------+-------------
+----+----------+--------------------+
+1 row in set (0.009 sec)
+
+mysql&gt; SELECT *
+-&gt; FROM TXN
+
+-&gt; WHERE AccountNo = &#39;AC10001&#39;
+-&gt; ORDER BY TxnTime;
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch | Channel
+| Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+| 1001 | AC10001 | 2026-11-10 09:00:00 | CREDIT | 5000.00 | Chennai | UPI
+| Salary credit | 25000.00 | Sample transaction |
+| 1003 | AC10001 | 2026-11-10 09:10:00 | DEBIT | 1200.00 | Chennai | UPI
+| Utility payment | 23800.00 | Sample transaction |
+| 1007 | AC10001 | 2026-11-10 10:05:00 | DEBIT | 300.00 | Chennai | CARD
+| Fuel purchase | 23500.00 | Sample transaction |
+| 1014 | AC10001 | 2026-11-10 11:15:00 | CREDIT | 900.00 | Chennai |
+NEFT | Transfer received | 24400.00 | Sample transaction |
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+4 rows in set (0.008 sec)
+
+mysql&gt; SELECT *
+-&gt; FROM TXN
+-&gt; WHERE Branch = &#39;Chennai&#39;
+-&gt; ORDER BY TxnTime;
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch | Channel
+| Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+| 1001 | AC10001 | 2026-11-10 09:00:00 | CREDIT | 5000.00 | Chennai | UPI
+| Salary credit | 25000.00 | Sample transaction |
+| 1003 | AC10001 | 2026-11-10 09:10:00 | DEBIT | 1200.00 | Chennai | UPI
+| Utility payment | 23800.00 | Sample transaction |
+| 1006 | AC10004 | 2026-11-10 10:00:00 | CREDIT | 2500.00 | Chennai |
+IMPS | Funds received | 32500.00 | Sample transaction |
+| 1007 | AC10001 | 2026-11-10 10:05:00 | DEBIT | 300.00 | Chennai | CARD
+| Fuel purchase | 23500.00 | Sample transaction |
+| 1011 | AC10004 | 2026-11-10 11:00:00 | DEBIT | 750.00 | Chennai | UPI
+| Electricity bill | 31750.00 | Sample transaction |
+| 1014 | AC10001 | 2026-11-10 11:15:00 | CREDIT | 900.00 | Chennai |
+NEFT | Transfer received | 24400.00 | Sample transaction |
++-------+-----------+---------------------+--------+---------+---------+---------+------------
+-------+----------+--------------------+
+6 rows in set (0.009 sec)
+
+mysql&gt; SELECT *
+-&gt; FROM TXN
+-&gt; WHERE TxnID BETWEEN 1003 AND 1008
+-&gt; ORDER BY TxnID;
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch |
+Channel | Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+| 1003 | AC10001 | 2026-11-10 09:10:00 | DEBIT | 1200.00 | Chennai | UPI
+| Utility payment | 23800.00 | Sample transaction |
+| 1004 | AC10003 | 2026-11-10 09:15:00 | CREDIT | 800.00 | Mumbai |
+NEFT | Transfer received | 10800.00 | Sample transaction |
+| 1005 | AC10002 | 2026-11-10 09:20:00 | DEBIT | 150.00 | Bengaluru | UPI
+| Food payment | 14600.00 | Sample transaction |
+| 1006 | AC10004 | 2026-11-10 10:00:00 | CREDIT | 2500.00 | Chennai |
+IMPS | Funds received | 32500.00 | Sample transaction |
+| 1007 | AC10001 | 2026-11-10 10:05:00 | DEBIT | 300.00 | Chennai |
+CARD | Fuel purchase | 23500.00 | Sample transaction |
+| 1008 | AC10003 | 2026-11-10 10:10:00 | DEBIT | 400.00 | Mumbai | UPI
+| Online purchase | 10400.00 | Sample transaction |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+6 rows in set (0.006 sec)
+
+mysql&gt; SELECT *
+-&gt; FROM TXN
+-&gt; WHERE TxnTime &gt;= &#39;2026-11-10 10:00:00&#39;
+-&gt; AND TxnTime &lt; &#39;2026-11-10 11:00:00&#39;
+-&gt; ORDER BY TxnTime;
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch |
+Channel | Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+| 1006 | AC10004 | 2026-11-10 10:00:00 | CREDIT | 2500.00 | Chennai |
+IMPS | Funds received | 32500.00 | Sample transaction |
+| 1007 | AC10001 | 2026-11-10 10:05:00 | DEBIT | 300.00 | Chennai |
+CARD | Fuel purchase | 23500.00 | Sample transaction |
+| 1008 | AC10003 | 2026-11-10 10:10:00 | DEBIT | 400.00 | Mumbai | UPI
+| Online purchase | 10400.00 | Sample transaction |
+| 1009 | AC10005 | 2026-11-10 10:15:00 | CREDIT | 1500.00 | Delhi | NEFT
+| Transfer received | 21500.00 | Sample transaction |
+| 1010 | AC10002 | 2026-11-10 10:20:00 | DEBIT | 600.00 | Bengaluru | UPI
+| Shopping payment | 14000.00 | Sample transaction |
++-------+-----------+---------------------+--------+---------+-----------+---------+----------
+---------+----------+--------------------+
+5 rows in set (0.016 sec)
+
+mysql&gt; SELECT DATE_FORMAT(TxnTime, &#39;%Y-%m-%d %H:00:00&#39;) AS
+TransactionHour,
+-&gt; COUNT(*) AS TransactionCount,
+-&gt; SUM(Amount) AS TotalAmount
+-&gt; FROM TXN
+-&gt; GROUP BY DATE_FORMAT(TxnTime, &#39;%Y-%m-%d %H:00:00&#39;)
+-&gt; ORDER BY TransactionHour;
++---------------------+------------------+-------------+
+| TransactionHour | TransactionCount | TotalAmount |
+
++---------------------+------------------+-------------+
+| 2026-11-10 09:00:00 | 5 | 7400.00 |
+| 2026-11-10 10:00:00 | 5 | 5300.00 |
+| 2026-11-10 11:00:00 | 5 | 4200.00 |
++---------------------+------------------+-------------+
+3 rows in set (0.014 sec)
+
+mysql&gt; SELECT Branch,
+-&gt; COUNT(*) AS TransactionCount,
+-&gt; SUM(Amount) AS TotalAmount
+-&gt; FROM TXN
+-&gt; GROUP BY Branch
+-&gt; ORDER BY Branch;
++-----------+------------------+-------------+
+| Branch | TransactionCount | TotalAmount |
++-----------+------------------+-------------+
+| Bengaluru | 3 | 1000.00 |
+| Chennai | 6 | 10650.00 |
+| Delhi | 2 | 3500.00 |
+| Hyderabad | 2 | 550.00 |
+| Mumbai | 2 | 1200.00 |
++-----------+------------------+-------------+
+5 rows in set (0.007 sec)
+
+mysql&gt; SELECT Channel, Type,
+-&gt; COUNT(*) AS TransactionCount,
+
+-&gt; SUM(Amount) AS TotalAmount
+-&gt; FROM TXN
+-&gt; GROUP BY Channel, Type
+-&gt; ORDER BY Channel, Type;
++---------+--------+------------------+-------------+
+| Channel | Type | TransactionCount | TotalAmount |
++---------+--------+------------------+-------------+
+| CARD | DEBIT | 3 | 1000.00 |
+| IMPS | CREDIT | 2 | 4500.00 |
+| NEFT | CREDIT | 3 | 3200.00 |
+| UPI | CREDIT | 1 | 5000.00 |
+| UPI | DEBIT | 6 | 3200.00 |
++---------+--------+------------------+-------------+
+5 rows in set (0.010 sec)
+
+mysql&gt; SELECT TxnID, AccountNo, TxnTime, Amount, Branch
+-&gt; FROM TXN
+-&gt; WHERE Amount &gt;= 1000
+-&gt; ORDER BY Amount DESC;
++-------+-----------+---------------------+---------+---------+
+| TxnID | AccountNo | TxnTime | Amount | Branch |
++-------+-----------+---------------------+---------+---------+
+| 1001 | AC10001 | 2026-11-10 09:00:00 | 5000.00 | Chennai |
+| 1006 | AC10004 | 2026-11-10 10:00:00 | 2500.00 | Chennai |
+| 1012 | AC10005 | 2026-11-10 11:05:00 | 2000.00 | Delhi |
+| 1009 | AC10005 | 2026-11-10 10:15:00 | 1500.00 | Delhi |
+
+| 1003 | AC10001 | 2026-11-10 09:10:00 | 1200.00 | Chennai |
++-------+-----------+---------------------+---------+---------+
+5 rows in set (0.007 sec)
+
+mysql&gt; INSERT INTO TXN
+-&gt; (TxnID, AccountNo, TxnTime, Type, Amount, Branch,
+-&gt; Channel, Narration, Balance, OtherInfo)
+-&gt; VALUES
+-&gt; (1016, &#39;AC10007&#39;, &#39;2026-11-10 12:00:00&#39;, &#39;CREDIT&#39;, 900.00,
+-&gt; &#39;Mumbai&#39;, &#39;UPI&#39;, &#39;Refund received&#39;, 15900.00, &#39;Sample transaction&#39;);
+Query OK, 1 row affected (0.044 sec)
+
+mysql&gt; SELECT * FROM TXN WHERE TxnID = 1016;
++-------+-----------+---------------------+--------+--------+--------+---------+--------------
+---+----------+--------------------+
+| TxnID | AccountNo | TxnTime | Type | Amount | Branch | Channel |
+Narration | Balance | OtherInfo |
++-------+-----------+---------------------+--------+--------+--------+---------+--------------
+---+----------+--------------------+
+| 1016 | AC10007 | 2026-11-10 12:00:00 | CREDIT | 900.00 | Mumbai | UPI
+| Refund received | 15900.00 | Sample transaction |
++-------+-----------+---------------------+--------+--------+--------+---------+--------------
+---+----------+--------------------+
+1 row in set (0.007 sec)
+
+mysql&gt;
+mysql&gt; UPDATE TXN
+
+-&gt; SET Narration = &#39;Refund processed&#39;
+-&gt; WHERE TxnID = 1016;
+Query OK, 1 row affected (0.043 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+
+mysql&gt; DELETE FROM TXN
+-&gt; WHERE TxnID = 1016;
+Query OK, 1 row affected (0.040 sec)
+
+mysql&gt; SELECT * FROM TXN WHERE TxnID = 1016;
+Empty set (0.006 sec)
+
+mysql&gt; SHOW INDEX FROM TXN;
++-------+------------+------------------+--------------+-------------+-----------+------------
+-+----------+--------+------+------------+---------+---------------+---------+------------+
+| Table | Non_unique | Key_name | Seq_in_index | Column_name |
+Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment |
+Index_comment | Visible | Expression |
++-------+------------+------------------+--------------+-------------+-----------+------------
+-+----------+--------+------+------------+---------+---------------+---------+------------+
+| txn | 0 | PRIMARY | 1 | TxnID | A | 15 |
+NULL | NULL | | BTREE | | | YES | NULL |
+| txn | 1 | idx_account_time | 1 | AccountNo | A | 6 |
+NULL | NULL | | BTREE | | | YES | NULL |
+| txn | 1 | idx_account_time | 2 | TxnTime | A | 15 |
+NULL | NULL | | BTREE | | | YES | NULL |
+
+| txn | 1 | idx_branch_time | 1 | Branch | A | 5 |
+NULL | NULL | | BTREE | | | YES | NULL |
+| txn | 1 | idx_branch_time | 2 | TxnTime | A | 15 |
+NULL | NULL | | BTREE | | | YES | NULL |
+| txn | 1 | idx_txntime | 1 | TxnTime | A | 15 |
+NULL | NULL | | BTREE | | | YES | NULL |
++-------+------------+------------------+--------------+-------------+-----------+------------
+-+----------+--------+------+------------+---------+---------------+---------+------------+
+6 rows in set (0.096 sec)
+
+mysql&gt; EXPLAIN SELECT * FROM TXN WHERE TxnID = 1003;
++-------------------------------------------------------+
+| EXPLAIN |
++-------------------------------------------------------+
+| -&gt; Rows fetched before execution (cost=0..0 rows=1)
+|
++-------------------------------------------------------+
+1 row in set (0.004 sec)
+
+mysql&gt;
+mysql&gt; EXPLAIN
+-&gt; SELECT * FROM TXN
+-&gt; WHERE AccountNo = &#39;AC10001&#39;
+-&gt; ORDER BY TxnTime;
++-------------------------------------------------------------------------------------------+
+| EXPLAIN |
+
++-------------------------------------------------------------------------------------------+
+| -&gt; Index lookup on TXN using idx_account_time (AccountNo = &#39;AC10001&#39;)
+(cost=0.9 rows=4)
+|
++-------------------------------------------------------------------------------------------+
+1 row in set (0.011 sec)
+
+mysql&gt;
+mysql&gt; EXPLAIN
+-&gt; SELECT * FROM TXN
+-&gt; WHERE Branch = &#39;Chennai&#39;
+-&gt; ORDER BY TxnTime;
++---------------------------------------------------------------------------------------+
+| EXPLAIN |
++---------------------------------------------------------------------------------------+
+| -&gt; Index lookup on TXN using idx_branch_time (Branch = &#39;Chennai&#39;)
+(cost=1.1 rows=6)
+|
++---------------------------------------------------------------------------------------+
+1 row in set (0.006 sec)
+
+mysql&gt;
+mysql&gt; EXPLAIN
+-&gt; SELECT * FROM TXN
+-&gt; WHERE TxnTime &gt;= &#39;2026-11-10 10:00:00&#39;
+-&gt; AND TxnTime &lt; &#39;2026-11-10 11:00:00&#39;
+
+-&gt; ORDER BY TxnTime;
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+----------------------------------------------------------+
+| EXPLAIN
+|
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+----------------------------------------------------------+
+| -&gt; Index range scan on TXN using idx_txntime over (&#39;2026-11-10 10:00:00&#39;
+&lt;= TxnTime &lt; &#39;2026-11-10 11:00:00&#39;), with index condition: ((txn.TxnTime
+&gt;= TIMESTAMP&#39;2026-11-10 10:00:00&#39;) and (txn.TxnTime &lt;
+TIMESTAMP&#39;2026-11-10 11:00:00&#39;)) (cost=2.51 rows=5)
+|
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+----------------------------------------------------------+
+1 row in set (0.016 sec)
+
+mysql&gt;
+mysql&gt; EXPLAIN
+-&gt; SELECT * FROM TXN
+-&gt; WHERE TxnID BETWEEN 1003 AND 1008
+-&gt; ORDER BY TxnID;
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------+
+| EXPLAIN
+|
+
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------+
+| -&gt; Filter: (txn.TxnID between 1003 and 1008) (cost=1.46 rows=6)
+-&gt; Index range scan on TXN using PRIMARY over (1003 &lt;= TxnID &lt;=
+1008) (cost=1.46 rows=6)
+|
++--------------------------------------------------------------------------------------------------
+---------------------------------------------------------------+
+1 row in set (0.017 sec)
+
+mysql&gt; SELECT COUNT(*) AS TotalTransactions
+-&gt; FROM TXN;
++-------------------+
+| TotalTransactions |
++-------------------+
+| 15 |
++-------------------+
+1 row in set (0.004 sec)
+
+mysql&gt;
+mysql&gt; SELECT table_name,
+-&gt; table_rows,
+-&gt; data_length,
+-&gt; index_length
+-&gt; FROM information_schema.tables
+-&gt; WHERE table_schema = &#39;bank_txn_db&#39;
+
+-&gt; AND table_name = &#39;TXN&#39;;
++------------+------------+-------------+--------------+
+| TABLE_NAME | TABLE_ROWS | DATA_LENGTH | INDEX_LENGTH |
++------------+------------+-------------+--------------+
+| txn | 15 | 16384 | 49152 |
++------------+------------+-------------+--------------+
+1 row in set (0.034 sec)
