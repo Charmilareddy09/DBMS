@@ -1,0 +1,698 @@
+mysql&gt; DROP DATABASE IF EXISTS shopnest_demo;
+
+Query OK, 0 rows affected, 1 warning (0.026 sec)
+
+mysql&gt; CREATE DATABASE shopnest_demo;
+Query OK, 1 row affected (0.031 sec)
+
+mysql&gt; USE shopnest_demo;
+Database changed
+mysql&gt; CREATE TABLE Customer (
+-&gt; CustomerID VARCHAR(10) PRIMARY KEY,
+-&gt; CustomerName VARCHAR(80) NOT NULL,
+-&gt; CustomerEmail VARCHAR(120) NOT NULL UNIQUE
+-&gt; );
+Query OK, 0 rows affected (0.145 sec)
+
+mysql&gt; CREATE TABLE Category (
+-&gt; CategoryID VARCHAR(10) PRIMARY KEY,
+-&gt; CategoryName VARCHAR(60) NOT NULL UNIQUE
+-&gt; );
+Query OK, 0 rows affected (0.136 sec)
+
+mysql&gt; CREATE TABLE Supplier (
+-&gt; SupplierID VARCHAR(10) PRIMARY KEY,
+-&gt; SupplierName VARCHAR(80) NOT NULL,
+-&gt; SupplierPhone VARCHAR(20) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.143 sec)
+
+mysql&gt; CREATE TABLE Warehouse (
+-&gt; WarehouseID VARCHAR(10) PRIMARY KEY,
+-&gt; WarehouseCity VARCHAR(60) NOT NULL
+-&gt; );
+Query OK, 0 rows affected (0.160 sec)
+
+mysql&gt; CREATE TABLE Product (
+-&gt; ProductID VARCHAR(10) PRIMARY KEY,
+-&gt; ProductName VARCHAR(100) NOT NULL,
+-&gt; UnitPrice DECIMAL(10,2) NOT NULL CHECK (UnitPrice &gt;= 0),
+-&gt; CategoryID VARCHAR(10) NOT NULL,
+-&gt; SupplierID VARCHAR(10) NOT NULL,
+-&gt; FOREIGN KEY (CategoryID) REFERENCES
+Category(CategoryID),
+-&gt; FOREIGN KEY (SupplierID) REFERENCES Supplier(SupplierID)
+-&gt; );
+Query OK, 0 rows affected (0.238 sec)
+
+mysql&gt; CREATE TABLE Orders (
+-&gt; OrderID VARCHAR(10) PRIMARY KEY,
+-&gt; OrderDate DATE NOT NULL,
+-&gt; CustomerID VARCHAR(10) NOT NULL,
+-&gt; ShipStreet VARCHAR(100) NOT NULL,
+-&gt; ShipCity VARCHAR(60) NOT NULL,
+-&gt; ShipPIN VARCHAR(10) NOT NULL,
+
+-&gt; ShipState VARCHAR(60) NOT NULL,
+-&gt; FOREIGN KEY (CustomerID) REFERENCES
+Customer(CustomerID)
+-&gt; );
+Query OK, 0 rows affected (0.225 sec)
+
+mysql&gt; CREATE TABLE Order_Item (
+-&gt; OrderID VARCHAR(10) NOT NULL,
+-&gt; ProductID VARCHAR(10) NOT NULL,
+-&gt; Quantity INT NOT NULL CHECK (Quantity &gt; 0),
+-&gt; WarehouseID VARCHAR(10) NOT NULL,
+-&gt; PricePaid DECIMAL(10,2) NOT NULL CHECK (PricePaid &gt;= 0),
+-&gt; PRIMARY KEY (OrderID, ProductID),
+-&gt; FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+-&gt; FOREIGN KEY (ProductID) REFERENCES Product(ProductID),
+-&gt; FOREIGN KEY (WarehouseID) REFERENCES
+Warehouse(WarehouseID)
+-&gt; );
+Query OK, 0 rows affected (0.258 sec)
+
+mysql&gt; CREATE TABLE Product_Tag (
+-&gt; ProductID VARCHAR(10) NOT NULL,
+-&gt; Tag VARCHAR(40) NOT NULL,
+-&gt; PRIMARY KEY (ProductID, Tag),
+-&gt; FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
+-&gt; );
+
+Query OK, 0 rows affected (0.168 sec)
+
+mysql&gt; CREATE TABLE Product_Colour (
+-&gt; ProductID VARCHAR(10) NOT NULL,
+-&gt; Colour VARCHAR(30) NOT NULL,
+-&gt; PRIMARY KEY (ProductID, Colour),
+-&gt; FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
+-&gt; );
+Query OK, 0 rows affected (0.152 sec)
+
+mysql&gt; INSERT INTO Customer (CustomerID, CustomerName,
+CustomerEmail) VALUES
+-&gt; (&#39;C01&#39;, &#39;Anu&#39;, &#39;anu@mail.com&#39;),
+-&gt; (&#39;C02&#39;, &#39;Bala&#39;, &#39;bala@mail.com&#39;),
+-&gt; (&#39;C03&#39;, &#39;Charan&#39;, &#39;charan@mail.com&#39;);
+Query OK, 3 rows affected (0.027 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Category (CategoryID, CategoryName) VALUES
+-&gt; (&#39;CT1&#39;, &#39;Stationery&#39;),
+-&gt; (&#39;CT2&#39;, &#39;Electronics&#39;);
+Query OK, 2 rows affected (0.037 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Supplier (SupplierID, SupplierName, SupplierPhone)
+VALUES
+
+-&gt; (&#39;S01&#39;, &#39;ABC Supplies&#39;, &#39;900001&#39;),
+-&gt; (&#39;S02&#39;, &#39;Bright Tech&#39;, &#39;900002&#39;);
+Query OK, 2 rows affected (0.034 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Warehouse (WarehouseID, WarehouseCity)
+VALUES
+-&gt; (&#39;W01&#39;, &#39;Chennai&#39;),
+-&gt; (&#39;W02&#39;, &#39;Coimbatore&#39;);
+Query OK, 2 rows affected (0.132 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Product
+-&gt; (ProductID, ProductName, UnitPrice, CategoryID, SupplierID)
+-&gt; VALUES
+-&gt; (&#39;P01&#39;, &#39;Notebook&#39;, 55.00, &#39;CT1&#39;, &#39;S01&#39;),
+-&gt; (&#39;P02&#39;, &#39;Pen&#39;, 10.00, &#39;CT1&#39;, &#39;S01&#39;),
+-&gt; (&#39;P03&#39;, &#39;Headphones&#39;, 1200.00, &#39;CT2&#39;, &#39;S02&#39;),
+-&gt; (&#39;P04&#39;, &#39;Unused Item&#39;, 25.00, &#39;CT1&#39;, &#39;S01&#39;);
+Query OK, 4 rows affected (0.057 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Orders
+-&gt; (OrderID, OrderDate, CustomerID, ShipStreet, ShipCity, ShipPIN,
+ShipState)
+-&gt; VALUES
+
+-&gt; (&#39;O101&#39;, &#39;2026-10-01&#39;, &#39;C01&#39;, &#39;12 Lake Road&#39;, &#39;Chennai&#39;, &#39;600001&#39;,
+&#39;Tamil Nadu&#39;),
+-&gt; (&#39;O102&#39;, &#39;2026-10-08&#39;, &#39;C01&#39;, &#39;12 Lake Road&#39;, &#39;Chennai&#39;, &#39;600001&#39;,
+&#39;Tamil Nadu&#39;),
+-&gt; (&#39;O103&#39;, &#39;2026-10-10&#39;, &#39;C02&#39;, &#39;5 Park Street&#39;, &#39;Coimbatore&#39;, &#39;641001&#39;,
+&#39;Tamil Nadu&#39;),
+-&gt; (&#39;O104&#39;, &#39;2026-10-12&#39;, &#39;C03&#39;, &#39;8 Hill Road&#39;, &#39;Chennai&#39;, &#39;600002&#39;, &#39;Tamil
+Nadu&#39;);
+Query OK, 4 rows affected (0.040 sec)
+Records: 4 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Order_Item
+-&gt; (OrderID, ProductID, Quantity, WarehouseID, PricePaid)
+-&gt; VALUES
+-&gt; (&#39;O101&#39;, &#39;P01&#39;, 2, &#39;W01&#39;, 50.00),
+-&gt; (&#39;O101&#39;, &#39;P02&#39;, 3, &#39;W01&#39;, 10.00),
+-&gt; (&#39;O102&#39;, &#39;P01&#39;, 1, &#39;W02&#39;, 55.00),
+-&gt; (&#39;O102&#39;, &#39;P03&#39;, 1, &#39;W02&#39;, 1150.00),
+-&gt; (&#39;O103&#39;, &#39;P02&#39;, 5, &#39;W01&#39;, 10.00),
+-&gt; (&#39;O103&#39;, &#39;P03&#39;, 1, &#39;W02&#39;, 1200.00),
+-&gt; (&#39;O104&#39;, &#39;P01&#39;, 1, &#39;W01&#39;, 52.00),
+-&gt; (&#39;O104&#39;, &#39;P02&#39;, 2, &#39;W01&#39;, 9.00);
+Query OK, 8 rows affected (0.052 sec)
+Records: 8 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Product_Tag (ProductID, Tag) VALUES
+
+-&gt; (&#39;P01&#39;, &#39;paper&#39;),
+-&gt; (&#39;P01&#39;, &#39;school&#39;),
+-&gt; (&#39;P01&#39;, &#39;writing&#39;),
+-&gt; (&#39;P02&#39;, &#39;writing&#39;),
+-&gt; (&#39;P02&#39;, &#39;office&#39;),
+-&gt; (&#39;P03&#39;, &#39;audio&#39;);
+Query OK, 6 rows affected (0.032 sec)
+Records: 6 Duplicates: 0 Warnings: 0
+
+mysql&gt; INSERT INTO Product_Colour (ProductID, Colour) VALUES
+-&gt; (&#39;P01&#39;, &#39;blue&#39;),
+-&gt; (&#39;P01&#39;, &#39;black&#39;),
+-&gt; (&#39;P02&#39;, &#39;blue&#39;),
+-&gt; (&#39;P03&#39;, &#39;black&#39;),
+-&gt; (&#39;P03&#39;, &#39;white&#39;);
+Query OK, 5 rows affected (0.598 sec)
+Records: 5 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM Customer;
++------------+--------------+-----------------+
+| CustomerID | CustomerName | CustomerEmail |
++------------+--------------+-----------------+
+| C01 | Anu | anu@mail.com |
+| C02 | Bala | bala@mail.com |
+| C03 | Charan | charan@mail.com |
++------------+--------------+-----------------+
+
+3 rows in set (0.008 sec)
+
+mysql&gt; SELECT * FROM Category;
++------------+--------------+
+| CategoryID | CategoryName |
++------------+--------------+
+| CT2 | Electronics |
+| CT1 | Stationery |
++------------+--------------+
+2 rows in set (0.003 sec)
+
+mysql&gt; SELECT * FROM Supplier;
++------------+--------------+---------------+
+| SupplierID | SupplierName | SupplierPhone |
++------------+--------------+---------------+
+| S01 | ABC Supplies | 900001 |
+| S02 | Bright Tech | 900002 |
++------------+--------------+---------------+
+2 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM Warehouse;
++-------------+---------------+
+| WarehouseID | WarehouseCity |
++-------------+---------------+
+| W01 | Chennai |
+| W02 | Coimbatore |
+
++-------------+---------------+
+2 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM Product;
++-----------+-------------+-----------+------------+------------+
+| ProductID | ProductName | UnitPrice | CategoryID | SupplierID |
++-----------+-------------+-----------+------------+------------+
+| P01 | Notebook | 55.00 | CT1 | S01 |
+| P02 | Pen | 10.00 | CT1 | S01 |
+| P03 | Headphones | 1200.00 | CT2 | S02 |
+| P04 | Unused Item | 25.00 | CT1 | S01 |
++-----------+-------------+-----------+------------+------------+
+4 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM Orders;
++---------+------------+------------+---------------+------------+---------+------------+
+| OrderID | OrderDate | CustomerID | ShipStreet | ShipCity | ShipPIN |
+ShipState |
++---------+------------+------------+---------------+------------+---------+------------+
+| O101 | 2026-10-01 | C01 | 12 Lake Road | Chennai | 600001 | Tamil
+Nadu |
+| O102 | 2026-10-08 | C01 | 12 Lake Road | Chennai | 600001 | Tamil
+Nadu |
+| O103 | 2026-10-10 | C02 | 5 Park Street | Coimbatore | 641001 | Tamil
+Nadu |
+| O104 | 2026-10-12 | C03 | 8 Hill Road | Chennai | 600002 | Tamil
+Nadu |
+
++---------+------------+------------+---------------+------------+---------+------------+
+4 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM Order_Item;
++---------+-----------+----------+-------------+-----------+
+| OrderID | ProductID | Quantity | WarehouseID | PricePaid |
++---------+-----------+----------+-------------+-----------+
+| O101 | P01 | 2 | W01 | 50.00 |
+| O101 | P02 | 3 | W01 | 10.00 |
+| O102 | P01 | 1 | W02 | 55.00 |
+| O102 | P03 | 1 | W02 | 1150.00 |
+| O103 | P02 | 5 | W01 | 10.00 |
+| O103 | P03 | 1 | W02 | 1200.00 |
+| O104 | P01 | 1 | W01 | 52.00 |
+| O104 | P02 | 2 | W01 | 9.00 |
++---------+-----------+----------+-------------+-----------+
+8 rows in set (0.006 sec)
+
+mysql&gt; SELECT * FROM Product_Tag;
++-----------+---------+
+| ProductID | Tag |
++-----------+---------+
+| P01 | paper |
+| P01 | school |
+| P01 | writing |
+| P02 | office |
+| P02 | writing |
+| P03 | audio |
++-----------+---------+
+6 rows in set (0.005 sec)
+
+mysql&gt; SELECT * FROM Product_Colour;
++-----------+--------+
+| ProductID | Colour |
++-----------+--------+
+| P01 | black |
+| P01 | blue |
+| P02 | blue |
+| P03 | black |
+| P03 | white |
++-----------+--------+
+5 rows in set (0.007 sec)
+
+mysql&gt; CREATE TABLE ORDER_LINE (
+-&gt; OrderID VARCHAR(10),
+-&gt; OrderDate DATE,
+-&gt; CustomerID VARCHAR(10),
+-&gt; CustomerName VARCHAR(80),
+-&gt; CustomerEmail VARCHAR(120),
+-&gt; ShipStreet VARCHAR(100),
+-&gt; ShipCity VARCHAR(60),
+-&gt; ShipPIN VARCHAR(10),
+
+-&gt; ShipState VARCHAR(60),
+-&gt; ProductID VARCHAR(10),
+-&gt; ProductName VARCHAR(100),
+-&gt; UnitPrice DECIMAL(10,2),
+-&gt; CategoryID VARCHAR(10),
+-&gt; CategoryName VARCHAR(60),
+-&gt; SupplierID VARCHAR(10),
+-&gt; SupplierName VARCHAR(80),
+-&gt; SupplierPhone VARCHAR(20),
+-&gt; Quantity INT,
+-&gt; WarehouseID VARCHAR(10),
+-&gt; WarehouseCity VARCHAR(60),
+-&gt; TagList VARCHAR(200),
+-&gt; ColourList VARCHAR(200),
+-&gt; PRIMARY KEY (OrderID, ProductID)
+-&gt; );
+Query OK, 0 rows affected (0.175 sec)
+
+mysql&gt; INSERT INTO ORDER_LINE
+-&gt; SELECT
+-&gt; o.OrderID, o.OrderDate, c.CustomerID, c.CustomerName,
+c.CustomerEmail,
+-&gt; o.ShipStreet, o.ShipCity, o.ShipPIN, o.ShipState,
+-&gt; p.ProductID, p.ProductName, p.UnitPrice, p.CategoryID,
+cat.CategoryName,
+-&gt; s.SupplierID, s.SupplierName, s.SupplierPhone,
+
+-&gt; oi.Quantity, w.WarehouseID, w.WarehouseCity,
+-&gt; COALESCE(
+-&gt; (SELECT GROUP_CONCAT(t.Tag ORDER BY t.Tag
+SEPARATOR &#39;,&#39;)
+-&gt; FROM Product_Tag t
+-&gt; WHERE t.ProductID = p.ProductID), &#39;&#39;
+-&gt; ),
+-&gt; COALESCE(
+-&gt; (SELECT GROUP_CONCAT(pc.Colour ORDER BY pc.Colour
+SEPARATOR &#39;,&#39;)
+-&gt; FROM Product_Colour pc
+-&gt; WHERE pc.ProductID = p.ProductID), &#39;&#39;
+-&gt; )
+-&gt; FROM Orders o
+-&gt; JOIN Customer c ON c.CustomerID = o.CustomerID
+-&gt; JOIN Order_Item oi ON oi.OrderID = o.OrderID
+-&gt; JOIN Product p ON p.ProductID = oi.ProductID
+-&gt; JOIN Category cat ON cat.CategoryID = p.CategoryID
+-&gt; JOIN Supplier s ON s.SupplierID = p.SupplierID
+-&gt; JOIN Warehouse w ON w.WarehouseID = oi.WarehouseID;
+Query OK, 8 rows affected (0.085 sec)
+Records: 8 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT * FROM ORDER_LINE
+-&gt; ORDER BY OrderID, ProductID;
+
++---------+------------+------------+--------------+-----------------+---------------+--------
+----+---------+------------+-----------+-------------+-----------+------------+--------------
++------------+--------------+---------------+----------+-------------+---------------+--------
+--------------+-------------+
+| OrderID | OrderDate | CustomerID | CustomerName | CustomerEmail |
+ShipStreet | ShipCity | ShipPIN | ShipState | ProductID | ProductName |
+UnitPrice | CategoryID | CategoryName | SupplierID | SupplierName |
+SupplierPhone | Quantity | WarehouseID | WarehouseCity | TagList |
+ColourList |
++---------+------------+------------+--------------+-----------------+---------------+--------
+----+---------+------------+-----------+-------------+-----------+------------+--------------
++------------+--------------+---------------+----------+-------------+---------------+--------
+--------------+-------------+
+| O101 | 2026-10-01 | C01 | Anu | anu@mail.com | 12 Lake Road |
+Chennai | 600001 | Tamil Nadu | P01 | Notebook | 55.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 2 | W01 | Chennai
+| paper,school,writing | black,blue |
+| O101 | 2026-10-01 | C01 | Anu | anu@mail.com | 12 Lake Road |
+Chennai | 600001 | Tamil Nadu | P02 | Pen | 10.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 3 | W01 | Chennai
+| office,writing | blue |
+| O102 | 2026-10-08 | C01 | Anu | anu@mail.com | 12 Lake Road |
+Chennai | 600001 | Tamil Nadu | P01 | Notebook | 55.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 1 | W02 |
+Coimbatore | paper,school,writing | black,blue |
+| O102 | 2026-10-08 | C01 | Anu | anu@mail.com | 12 Lake Road |
+Chennai | 600001 | Tamil Nadu | P03 | Headphones | 1200.00 | CT2
+| Electronics | S02 | Bright Tech | 900002 | 1 | W02 |
+Coimbatore | audio | black,white |
+
+| O103 | 2026-10-10 | C02 | Bala | bala@mail.com | 5 Park Street |
+Coimbatore | 641001 | Tamil Nadu | P02 | Pen | 10.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 5 | W01 | Chennai
+| office,writing | blue |
+| O103 | 2026-10-10 | C02 | Bala | bala@mail.com | 5 Park Street |
+Coimbatore | 641001 | Tamil Nadu | P03 | Headphones | 1200.00 | CT2
+| Electronics | S02 | Bright Tech | 900002 | 1 | W02 |
+Coimbatore | audio | black,white |
+| O104 | 2026-10-12 | C03 | Charan | charan@mail.com | 8 Hill Road
+| Chennai | 600002 | Tamil Nadu | P01 | Notebook | 55.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 1 | W01 | Chennai
+| paper,school,writing | black,blue |
+| O104 | 2026-10-12 | C03 | Charan | charan@mail.com | 8 Hill Road
+| Chennai | 600002 | Tamil Nadu | P02 | Pen | 10.00 | CT1 |
+Stationery | S01 | ABC Supplies | 900001 | 2 | W01 | Chennai
+| office,writing | blue |
++---------+------------+------------+--------------+-----------------+---------------+--------
+----+---------+------------+-----------+-------------+-----------+------------+--------------
++------------+--------------+---------------+----------+-------------+---------------+--------
+--------------+-------------+
+8 rows in set (0.009 sec)
+
+mysql&gt; SELECT OrderID, ProductID, COUNT(*) AS Copies
+-&gt; FROM Order_Item
+-&gt; GROUP BY OrderID, ProductID
+-&gt; HAVING COUNT(*) &gt; 1;
+Empty set (0.006 sec)
+
+mysql&gt; SELECT CustomerID,
+-&gt; COUNT(DISTINCT CustomerName) AS DifferentNames,
+-&gt; COUNT(DISTINCT CustomerEmail) AS DifferentEmails
+-&gt; FROM Customer
+-&gt; GROUP BY CustomerID
+-&gt; HAVING DifferentNames &gt; 1 OR DifferentEmails &gt; 1;
+Empty set (0.008 sec)
+
+mysql&gt; SELECT ProductID,
+-&gt; COUNT(DISTINCT CategoryID) AS DifferentCategories,
+-&gt; COUNT(DISTINCT SupplierID) AS DifferentSuppliers
+-&gt; FROM Product
+-&gt; GROUP BY ProductID
+-&gt; HAVING DifferentCategories &gt; 1 OR DifferentSuppliers &gt; 1;
+Empty set (0.009 sec)
+
+mysql&gt; SELECT OrderID, COUNT(DISTINCT CustomerID) AS
+DifferentCustomers
+-&gt; FROM Orders
+-&gt; GROUP BY OrderID
+-&gt; HAVING DifferentCustomers &gt; 1;
+Empty set (0.007 sec)
+
+mysql&gt; SELECT SupplierID, SupplierName, SupplierPhone,
+-&gt; COUNT(*) AS CopiesInOrderLines
+-&gt; FROM ORDER_LINE
+
+-&gt; GROUP BY SupplierID, SupplierName, SupplierPhone
+-&gt; ORDER BY SupplierID;
++------------+--------------+---------------+--------------------+
+| SupplierID | SupplierName | SupplierPhone | CopiesInOrderLines |
++------------+--------------+---------------+--------------------+
+| S01 | ABC Supplies | 900001 | 6 |
+| S02 | Bright Tech | 900002 | 2 |
++------------+--------------+---------------+--------------------+
+2 rows in set (0.008 sec)
+
+mysql&gt; SELECT CustomerID, CustomerName, CustomerEmail,
+-&gt; COUNT(*) AS CopiesInOrderLines
+-&gt; FROM ORDER_LINE
+-&gt; GROUP BY CustomerID, CustomerName, CustomerEmail
+-&gt; ORDER BY CustomerID;
++------------+--------------+-----------------+--------------------+
+| CustomerID | CustomerName | CustomerEmail | CopiesInOrderLines |
++------------+--------------+-----------------+--------------------+
+| C01 | Anu | anu@mail.com | 4 |
+| C02 | Bala | bala@mail.com | 2 |
+| C03 | Charan | charan@mail.com | 2 |
++------------+--------------+-----------------+--------------------+
+3 rows in set (0.010 sec)
+
+mysql&gt; SELECT
+-&gt; o.OrderID,
+
+-&gt; o.OrderDate,
+-&gt; c.CustomerName,
+-&gt; p.ProductID,
+-&gt; p.ProductName,
+-&gt; oi.Quantity,
+-&gt; oi.PricePaid,
+-&gt; oi.Quantity * oi.PricePaid AS LineTotal,
+-&gt; w.WarehouseCity
+-&gt; FROM Orders o
+-&gt; JOIN Customer c ON c.CustomerID = o.CustomerID
+-&gt; JOIN Order_Item oi ON oi.OrderID = o.OrderID
+-&gt; JOIN Product p ON p.ProductID = oi.ProductID
+-&gt; JOIN Warehouse w ON w.WarehouseID = oi.WarehouseID
+-&gt; WHERE c.CustomerID = &#39;C01&#39;
+-&gt; ORDER BY o.OrderDate DESC, o.OrderID, p.ProductID;
++---------+------------+--------------+-----------+-------------+----------+-----------+------
+-----+---------------+
+| OrderID | OrderDate | CustomerName | ProductID | ProductName |
+Quantity | PricePaid | LineTotal | WarehouseCity |
++---------+------------+--------------+-----------+-------------+----------+-----------+------
+-----+---------------+
+| O102 | 2026-10-08 | Anu | P01 | Notebook | 1 | 55.00 |
+55.00 | Coimbatore |
+| O102 | 2026-10-08 | Anu | P03 | Headphones | 1 | 1150.00 |
+1150.00 | Coimbatore |
+| O101 | 2026-10-01 | Anu | P01 | Notebook | 2 | 50.00 |
+100.00 | Chennai |
+
+| O101 | 2026-10-01 | Anu | P02 | Pen | 3 | 10.00 | 30.00
+| Chennai |
++---------+------------+--------------+-----------+-------------+----------+-----------+------
+-----+---------------+
+4 rows in set (0.013 sec)
+
+mysql&gt; SELECT ProductID, COUNT(*) AS TagCount
+-&gt; FROM Product_Tag
+-&gt; WHERE ProductID = &#39;P01&#39;
+-&gt; GROUP BY ProductID;
++-----------+----------+
+| ProductID | TagCount |
++-----------+----------+
+| P01 | 3 |
++-----------+----------+
+1 row in set (0.010 sec)
+
+mysql&gt; SELECT ProductID, COUNT(*) AS ColourCount
+-&gt; FROM Product_Colour
+-&gt; WHERE ProductID = &#39;P01&#39;
+-&gt; GROUP BY ProductID;
++-----------+-------------+
+| ProductID | ColourCount |
++-----------+-------------+
+| P01 | 2 |
++-----------+-------------+
+
+1 row in set (0.008 sec)
+
+mysql&gt; SELECT
+-&gt; (SELECT COUNT(*) FROM Product_Tag WHERE ProductID =
+&#39;P01&#39;) *
+-&gt; (SELECT COUNT(*) FROM Product_Colour WHERE ProductID =
+&#39;P01&#39;)
+-&gt; AS RowsInCombinedTagColourTable;
++------------------------------+
+| RowsInCombinedTagColourTable |
++------------------------------+
+| 6 |
++------------------------------+
+1 row in set (0.029 sec)
+
+mysql&gt; SELECT t.ProductID, t.Tag, c.Colour
+-&gt; FROM Product_Tag t
+-&gt; JOIN Product_Colour c ON c.ProductID = t.ProductID
+-&gt; WHERE t.ProductID = &#39;P01&#39;
+-&gt; ORDER BY t.Tag, c.Colour;
++-----------+---------+--------+
+| ProductID | Tag | Colour |
++-----------+---------+--------+
+| P01 | paper | black |
+| P01 | paper | blue |
+| P01 | school | black |
+
+| P01 | school | blue |
+| P01 | writing | black |
+| P01 | writing | blue |
++-----------+---------+--------+
+6 rows in set (0.011 sec)
+
+mysql&gt; CREATE TABLE Supply_SC (
+-&gt; SupplierID VARCHAR(10),
+-&gt; CategoryID VARCHAR(10),
+-&gt; PRIMARY KEY (SupplierID, CategoryID)
+-&gt; );
+Query OK, 0 rows affected (0.140 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE Supply_CW (
+-&gt; CategoryID VARCHAR(10),
+-&gt; WarehouseID VARCHAR(10),
+-&gt; PRIMARY KEY (CategoryID, WarehouseID)
+-&gt; );
+Query OK, 0 rows affected (0.088 sec)
+
+mysql&gt;
+mysql&gt; CREATE TABLE Supply_SW (
+-&gt; SupplierID VARCHAR(10),
+-&gt; WarehouseID VARCHAR(10),
+-&gt; PRIMARY KEY (SupplierID, WarehouseID)
+
+-&gt; );
+Query OK, 0 rows affected (0.243 sec)
+
+mysql&gt; INSERT INTO Supply_SC VALUES
+-&gt; (&#39;S01&#39;, &#39;CT1&#39;),
+-&gt; (&#39;S02&#39;, &#39;CT2&#39;);
+Query OK, 2 rows affected (0.061 sec)
+Records: 2 Duplicates: 0 Warnings: 0
+
+mysql&gt;
+mysql&gt; INSERT INTO Supply_CW VALUES
+-&gt; (&#39;CT1&#39;, &#39;W01&#39;),
+-&gt; (&#39;CT1&#39;, &#39;W02&#39;),
+-&gt; (&#39;CT2&#39;, &#39;W02&#39;);
+Query OK, 3 rows affected (0.037 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt;
+mysql&gt; INSERT INTO Supply_SW VALUES
+-&gt; (&#39;S01&#39;, &#39;W01&#39;),
+-&gt; (&#39;S01&#39;, &#39;W02&#39;),
+-&gt; (&#39;S02&#39;, &#39;W02&#39;);
+Query OK, 3 rows affected (0.033 sec)
+Records: 3 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT sc.SupplierID, sc.CategoryID, cw.WarehouseID
+
+-&gt; FROM Supply_SC sc
+-&gt; JOIN Supply_CW cw ON cw.CategoryID = sc.CategoryID
+-&gt; JOIN Supply_SW sw
+-&gt; ON sw.SupplierID = sc.SupplierID
+-&gt; AND sw.WarehouseID = cw.WarehouseID
+-&gt; ORDER BY sc.SupplierID, sc.CategoryID, cw.WarehouseID;
++------------+------------+-------------+
+| SupplierID | CategoryID | WarehouseID |
++------------+------------+-------------+
+| S01 | CT1 | W01 |
+| S01 | CT1 | W02 |
+| S02 | CT2 | W02 |
++------------+------------+-------------+
+3 rows in set (0.010 sec)
+
+mysql&gt; SELECT p.ProductID, p.ProductName
+-&gt; FROM Product p
+-&gt; LEFT JOIN Product_Tag t ON t.ProductID = p.ProductID
+-&gt; WHERE t.ProductID IS NULL;
++-----------+-------------+
+| ProductID | ProductName |
++-----------+-------------+
+| P04 | Unused Item |
++-----------+-------------+
+1 row in set (0.007 sec)
+
+mysql&gt; SELECT p.ProductID, p.ProductName
+-&gt; FROM Product p
+-&gt; LEFT JOIN Order_Item oi ON oi.ProductID = p.ProductID
+-&gt; WHERE oi.ProductID IS NULL;
++-----------+-------------+
+| ProductID | ProductName |
++-----------+-------------+
+| P04 | Unused Item |
++-----------+-------------+
+1 row in set (0.008 sec)
+
+mysql&gt; UPDATE Supplier
+-&gt; SET SupplierPhone = &#39;900009&#39;
+-&gt; WHERE SupplierID = &#39;S01&#39;;
+Query OK, 1 row affected (0.031 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+
+mysql&gt; SELECT SupplierID, SupplierName, SupplierPhone
+-&gt; FROM Supplier
+-&gt; WHERE SupplierID = &#39;S01&#39;;
++------------+--------------+---------------+
+| SupplierID | SupplierName | SupplierPhone |
++------------+--------------+---------------+
+| S01 | ABC Supplies | 900009 |
++------------+--------------+---------------+
+1 row in set (0.005 sec)
+
+mysql&gt; CREATE INDEX ix_orders_customer_date
+-&gt; ON Orders (CustomerID, OrderDate, OrderID);
+Query OK, 0 rows affected (0.281 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+
+mysql&gt;
+mysql&gt; CREATE INDEX ix_order_item_product
+-&gt; ON Order_Item (ProductID);
+Query OK, 0 rows affected (0.429 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+
+mysql&gt; SELECT TABLE_NAME, TABLE_ROWS, DATA_LENGTH,
+INDEX_LENGTH,
+-&gt; DATA_LENGTH + INDEX_LENGTH AS ApproxBytes
+-&gt; FROM INFORMATION_SCHEMA.TABLES
+-&gt; WHERE TABLE_SCHEMA = DATABASE()
+-&gt; ORDER BY TABLE_NAME;
++----------------+------------+-------------+--------------+-------------+
+| TABLE_NAME | TABLE_ROWS | DATA_LENGTH | INDEX_LENGTH
+| ApproxBytes |
++----------------+------------+-------------+--------------+-------------+
+| category | 2 | 16384 | 16384 | 32768 |
+| customer | 3 | 16384 | 16384 | 32768 |
+| order_item | 8 | 16384 | 32768 | 49152 |
+| order_line | 8 | 16384 | 0 | 16384 |
+
+| orders | 4 | 16384 | 16384 | 32768 |
+| product | 4 | 16384 | 32768 | 49152 |
+| product_colour | 5 | 16384 | 0 | 16384 |
+| product_tag | 6 | 16384 | 0 | 16384 |
+| supplier | 2 | 16384 | 0 | 16384 |
+| supply_cw | 3 | 16384 | 0 | 16384 |
+| supply_sc | 2 | 16384 | 0 | 16384 |
+| supply_sw | 3 | 16384 | 0 | 16384 |
+| warehouse | 2 | 16384 | 0 | 16384 |
++----------------+------------+-------------+--------------+-------------+
+13 rows in set (0.266 sec)
+
+mysql&gt; SELECT COUNT(*) AS OrderItemRows
+-&gt; FROM Order_Item;
++---------------+
+| OrderItemRows |
++---------------+
+| 8 |
++---------------+
+1 row in set (0.011 sec) 
