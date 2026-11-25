@@ -1,0 +1,471 @@
+mysql> CREATE DATABASE rivergate_db;
+Query OK, 1 row affected (0.127 sec)
+
+mysql> USE rivergate_db;
+Database changed
+mysql> CREATE TABLE Canal_Pool (
+    ->     canal_id BIGINT PRIMARY KEY,
+    ->     canal_name VARCHAR(100) NOT NULL,
+    ->     balance BIGINT NOT NULL CHECK (balance >= 0),
+    ->     updated_at TIMESTAMP NOT NULL
+    ->         DEFAULT CURRENT_TIMESTAMP
+    ->         ON UPDATE CURRENT_TIMESTAMP
+    -> ) ENGINE = InnoDB;
+Query OK, 0 rows affected (0.571 sec)
+
+mysql> CREATE TABLE Farm_Day (
+    ->     farm_id BIGINT NOT NULL,
+    ->     allocation_date DATE NOT NULL,
+    ->     used_amount BIGINT NOT NULL DEFAULT 0,
+    ->     daily_limit BIGINT NOT NULL,
+    ->     PRIMARY KEY (farm_id, allocation_date),
+    ->     CHECK (used_amount >= 0),
+    ->     CHECK (daily_limit >= 0),
+    ->     CHECK (used_amount <= daily_limit)
+    -> ) ENGINE = InnoDB;
+Query OK, 0 rows affected (0.448 sec)
+
+mysql> CREATE TABLE Allocation_Ledger (
+    ->     request_id VARCHAR(64) PRIMARY KEY,
+    ->     farm_id BIGINT NOT NULL,
+    ->     allocation_date DATE NOT NULL,
+    ->     source_canal BIGINT NOT NULL,
+    ->     destination_canal BIGINT NOT NULL,
+    ->     amount BIGINT NOT NULL CHECK (amount > 0),
+    ->     committed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ->
+    ->     CHECK (source_canal <> destination_canal),
+    ->
+    ->     FOREIGN KEY (farm_id, allocation_date)
+    ->         REFERENCES Farm_Day (farm_id, allocation_date),
+    ->
+    ->     FOREIGN KEY (source_canal)
+    ->         REFERENCES Canal_Pool (canal_id),
+    ->
+    ->     FOREIGN KEY (destination_canal)
+    ->         REFERENCES Canal_Pool (canal_id),
+    ->
+    ->     INDEX ix_ledger_date (allocation_date)
+    -> ) ENGINE = InnoDB;
+Query OK, 0 rows affected (0.610 sec)
+
+mysql> INSERT INTO Canal_Pool (canal_id, canal_name, balance)
+    -> VALUES
+    ->     (1, 'North Canal', 1000),
+    ->     (2, 'Central Canal', 500),
+    ->     (3, 'South Canal', 300);
+Query OK, 3 rows affected (0.378 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO Farm_Day (farm_id, allocation_date, used_amount, daily_limit)
+    -> VALUES
+    ->     (101, CURRENT_DATE(), 0, 100),
+    ->     (102, CURRENT_DATE(), 0, 200);
+Query OK, 2 rows affected (0.344 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+mysql> SELECT canal_id, canal_name, balance
+    -> FROM Canal_Pool
+    -> ORDER BY canal_id;
++----------+---------------+---------+
+| canal_id | canal_name    | balance |
++----------+---------------+---------+
+|        1 | North Canal   |    1000 |
+|        2 | Central Canal |     500 |
+|        3 | South Canal   |     300 |
++----------+---------------+---------+
+3 rows in set (0.205 sec)
+
+mysql> SELECT SUM(balance) AS total_tokens
+    -> FROM Canal_Pool;
++--------------+
+| total_tokens |
++--------------+
+|         1800 |
++--------------+
+1 row in set (0.327 sec)
+
+mysql> DELIMITER $$
+mysql>
+mysql> CREATE PROCEDURE Allocate_Tokens(
+    ->     IN p_request_id VARCHAR(64),
+    ->     IN p_farm_id BIGINT,
+    ->     IN p_allocation_date DATE,
+    ->     IN p_source_canal BIGINT,
+    ->     IN p_destination_canal BIGINT,
+    ->     IN p_amount BIGINT
+    -> )
+    -> proc: BEGIN
+    ->     DECLARE v_existing INT DEFAULT 0;
+    ->     DECLARE v_found INT DEFAULT 1;
+    ->     DECLARE v_used BIGINT DEFAULT NULL;
+    ->     DECLARE v_limit BIGINT DEFAULT NULL;
+    ->     DECLARE v_source_balance BIGINT DEFAULT NULL;
+    ->     DECLARE v_destination_balance BIGINT DEFAULT NULL;
+    ->     DECLARE v_lock_balance BIGINT DEFAULT NULL;
+    ->
+    ->     DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    ->     BEGIN
+    ->         ROLLBACK;
+    ->         RESIGNAL;
+    ->     END;
+    ->
+    ->     IF p_request_id IS NULL
+    ->        OR p_request_id = ''
+    ->        OR p_amount IS NULL
+    ->        OR p_amount <= 0
+    ->        OR p_source_canal = p_destination_canal THEN
+    ->         SELECT 'INVALID_INPUT' AS result;
+    ->         LEAVE proc;
+    ->     END IF;
+    ->
+    ->     START TRANSACTION;
+    ->
+    ->     -- If this request was already committed, return it without applying it again.
+    ->     SELECT COUNT(*)
+    ->     INTO v_existing
+    ->     FROM Allocation_Ledger
+    ->     WHERE request_id = p_request_id;
+    ->
+    ->     IF v_existing > 0 THEN
+    ->         SELECT request_id, farm_id, allocation_date,
+    ->                source_canal, destination_canal, amount,
+    ->                committed_at, 'ALREADY_APPLIED' AS result
+    ->         FROM Allocation_Ledger
+    ->         WHERE request_id = p_request_id;
+    ->
+    ->         COMMIT;
+    ->         LEAVE proc;
+    ->     END IF;
+    ->
+    ->     -- Lock the farm/day row and check its daily quota.
+    ->     SET v_found = 1;
+    ->
+    ->     BEGIN
+    ->         DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_found = 0;
+    ->
+    ->         SELECT used_amount, daily_limit
+    ->         INTO v_used, v_limit
+    ->         FROM Farm_Day
+    ->         WHERE farm_id = p_farm_id
+    ->           AND allocation_date = p_allocation_date
+    ->         FOR UPDATE;
+    ->     END;
+    ->
+    ->     IF v_found = 0 THEN
+    ->         ROLLBACK;
+    ->         SELECT 'FARM_DAY_NOT_FOUND' AS result;
+    ->         LEAVE proc;
+    ->     END IF;
+    ->
+    ->     IF v_used + p_amount > v_limit THEN
+    ->         ROLLBACK;
+    ->
+    ->         SELECT 'DAILY_LIMIT_EXCEEDED' AS result,
+    ->                v_used AS used_amount,
+    ->                v_limit AS daily_limit,
+    ->                p_amount AS requested_amount;
+    ->
+    ->         LEAVE proc;
+    ->     END IF;
+    ->
+    ->     -- Lock the two canal rows in ascending canal ID order.
+    ->     IF p_source_canal < p_destination_canal THEN
+    ->         SELECT balance INTO v_lock_balance
+    ->         FROM Canal_Pool
+    ->         WHERE canal_id = p_source_canal
+    ->         FOR UPDATE;
+    ->
+    ->         SELECT balance INTO v_lock_balance
+    ->         FROM Canal_Pool
+    ->         WHERE canal_id = p_destination_canal
+    ->         FOR UPDATE;
+    ->     ELSE
+    ->         SELECT balance INTO v_lock_balance
+    ->         FROM Canal_Pool
+    ->         WHERE canal_id = p_destination_canal
+    ->         FOR UPDATE;
+    ->
+    ->         SELECT balance INTO v_lock_balance
+    ->         FROM Canal_Pool
+    ->         WHERE canal_id = p_source_canal
+    ->         FOR UPDATE;
+    ->     END IF;
+    ->
+    ->     SELECT balance
+    ->     INTO v_source_balance
+    ->     FROM Canal_Pool
+    ->     WHERE canal_id = p_source_canal;
+    ->
+    ->     SELECT balance
+    ->     INTO v_destination_balance
+    ->     FROM Canal_Pool
+    ->     WHERE canal_id = p_destination_canal;
+    ->
+    ->     IF v_source_balance < p_amount THEN
+    ->         ROLLBACK;
+    ->
+    ->         SELECT 'INSUFFICIENT_CANAL_BALANCE' AS result,
+    ->                v_source_balance AS source_balance,
+    ->                p_amount AS requested_amount;
+    ->
+    ->         LEAVE proc;
+    ->     END IF;
+    ->
+    ->     -- Transfer tokens and update the farm's daily usage.
+    ->     UPDATE Canal_Pool
+    ->     SET balance = balance - p_amount
+    ->     WHERE canal_id = p_source_canal;
+    ->
+    ->     UPDATE Canal_Pool
+    ->     SET balance = balance + p_amount
+    ->     WHERE canal_id = p_destination_canal;
+    ->
+    ->     UPDATE Farm_Day
+    ->     SET used_amount = used_amount + p_amount
+    ->     WHERE farm_id = p_farm_id
+    ->       AND allocation_date = p_allocation_date
+    ->       AND used_amount + p_amount <= daily_limit;
+    ->
+    ->     -- Record the committed request.
+    ->     INSERT INTO Allocation_Ledger (
+    ->         request_id,
+    ->         farm_id,
+    ->         allocation_date,
+    ->         source_canal,
+    ->         destination_canal,
+    ->         amount
+    ->     )
+    ->     VALUES (
+    ->         p_request_id,
+    ->         p_farm_id,
+    ->         p_allocation_date,
+    ->         p_source_canal,
+    ->         p_destination_canal,
+    ->         p_amount
+    ->     );
+    ->
+    ->     COMMIT;
+    ->
+    ->     SELECT 'APPLIED' AS result,
+    ->            p_request_id AS request_id,
+    ->            v_source_balance - p_amount AS source_balance_after,
+    ->            v_destination_balance + p_amount AS destination_balance_after,
+    ->            p_amount AS amount;
+    -> END$$
+Query OK, 0 rows affected (0.175 sec)
+
+mysql>
+mysql> DELIMITER ;
+mysql> CALL Allocate_Tokens(
+    ->     'RG-REQ-0001',
+    ->     101,
+    ->     CURRENT_DATE(),
+    ->     1,
+    ->     2,
+    ->     100
+    -> );
++---------+-------------+----------------------+---------------------------+--------+
+| result  | request_id  | source_balance_after | destination_balance_after | amount |
++---------+-------------+----------------------+---------------------------+--------+
+| APPLIED | RG-REQ-0001 |                  900 |                       600 |    100 |
++---------+-------------+----------------------+---------------------------+--------+
+1 row in set (0.210 sec)
+
+Query OK, 0 rows affected (0.274 sec)
+
+mysql> CALL Allocate_Tokens(
+    ->     'RG-REQ-0001',
+    ->     101,
+    ->     CURRENT_DATE(),
+    ->     1,
+    ->     2,
+    ->     100
+    -> );
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+-----------------+
+| request_id  | farm_id | allocation_date | source_canal | destination_canal | amount | committed_at        | result          |
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+-----------------+
+| RG-REQ-0001 |     101 | 2026-11-25      |            1 |                 2 |    100 | 2026-11-25 21:36:22 | ALREADY_APPLIED |
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+-----------------+
+1 row in set (0.194 sec)
+
+Query OK, 0 rows affected (0.302 sec)
+
+mysql> CALL Allocate_Tokens(
+    ->     'RG-REQ-0002',
+    ->     101,
+    ->     CURRENT_DATE(),
+    ->     1,
+    ->     2,
+    ->     1
+    -> );
++----------------------+-------------+-------------+------------------+
+| result               | used_amount | daily_limit | requested_amount |
++----------------------+-------------+-------------+------------------+
+| DAILY_LIMIT_EXCEEDED |         100 |         100 |                1 |
++----------------------+-------------+-------------+------------------+
+1 row in set (0.008 sec)
+
+Query OK, 0 rows affected (0.071 sec)
+
+mysql> CALL Allocate_Tokens(
+    ->     'RG-REQ-0003',
+    ->     102,
+    ->     CURRENT_DATE(),
+    ->     3,
+    ->     1,
+    ->     9999
+    -> );
++----------------------+-------------+-------------+------------------+
+| result               | used_amount | daily_limit | requested_amount |
++----------------------+-------------+-------------+------------------+
+| DAILY_LIMIT_EXCEEDED |           0 |         200 |             9999 |
++----------------------+-------------+-------------+------------------+
+1 row in set (0.008 sec)
+
+Query OK, 0 rows affected (0.064 sec)
+
+mysql> SELECT canal_id, canal_name, balance
+    -> FROM Canal_Pool
+    -> ORDER BY canal_id;
++----------+---------------+---------+
+| canal_id | canal_name    | balance |
++----------+---------------+---------+
+|        1 | North Canal   |     900 |
+|        2 | Central Canal |     600 |
+|        3 | South Canal   |     300 |
++----------+---------------+---------+
+3 rows in set (0.006 sec)
+
+mysql> SELECT SUM(balance) AS total_tokens
+    -> FROM Canal_Pool;
++--------------+
+| total_tokens |
++--------------+
+|         1800 |
++--------------+
+1 row in set (0.008 sec)
+
+mysql> SELECT farm_id,
+    ->        allocation_date,
+    ->        used_amount,
+    ->        daily_limit,
+    ->        daily_limit - used_amount AS remaining_daily_quota
+    -> FROM Farm_Day
+    -> ORDER BY farm_id;
++---------+-----------------+-------------+-------------+-----------------------+
+| farm_id | allocation_date | used_amount | daily_limit | remaining_daily_quota |
++---------+-----------------+-------------+-------------+-----------------------+
+|     101 | 2026-11-25      |         100 |         100 |                     0 |
+|     102 | 2026-11-25      |           0 |         200 |                   200 |
++---------+-----------------+-------------+-------------+-----------------------+
+2 rows in set (0.006 sec)
+
+mysql> SELECT request_id,
+    ->        farm_id,
+    ->        allocation_date,
+    ->        source_canal,
+    ->        destination_canal,
+    ->        amount,
+    ->        committed_at
+    -> FROM Allocation_Ledger
+    -> ORDER BY committed_at, request_id;
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+
+| request_id  | farm_id | allocation_date | source_canal | destination_canal | amount | committed_at        |
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+
+| RG-REQ-0001 |     101 | 2026-11-25      |            1 |                 2 |    100 | 2026-11-25 21:36:22 |
++-------------+---------+-----------------+--------------+-------------------+--------+---------------------+
+1 row in set (0.221 sec)
+
+mysql> SELECT source_canal,
+    ->        SUM(amount) AS total_moved_out
+    -> FROM Allocation_Ledger
+    -> GROUP BY source_canal
+    -> ORDER BY source_canal;
++--------------+-----------------+
+| source_canal | total_moved_out |
++--------------+-----------------+
+|            1 |             100 |
++--------------+-----------------+
+1 row in set (0.007 sec)
+
+mysql> SELECT destination_canal,
+    ->        SUM(amount) AS total_moved_in
+    -> FROM Allocation_Ledger
+    -> GROUP BY destination_canal
+    -> ORDER BY destination_canal;
++-------------------+----------------+
+| destination_canal | total_moved_in |
++-------------------+----------------+
+|                 2 |            100 |
++-------------------+----------------+
+1 row in set (0.005 sec)
+
+mysql> SELECT farm_id,
+    ->        allocation_date,
+    ->        SUM(amount) AS allocated_today
+    -> FROM Allocation_Ledger
+    -> GROUP BY farm_id, allocation_date
+    -> ORDER BY farm_id;
++---------+-----------------+-----------------+
+| farm_id | allocation_date | allocated_today |
++---------+-----------------+-----------------+
+|     101 | 2026-11-25      |             100 |
++---------+-----------------+-----------------+
+1 row in set (0.008 sec)
+
+mysql> SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+Query OK, 0 rows affected (0.186 sec)
+
+mysql>
+mysql> START TRANSACTION WITH CONSISTENT SNAPSHOT;
+Query OK, 0 rows affected (0.004 sec)
+
+mysql>
+mysql> SELECT canal_id, canal_name, balance
+    -> FROM Canal_Pool
+    -> ORDER BY canal_id;
++----------+---------------+---------+
+| canal_id | canal_name    | balance |
++----------+---------------+---------+
+|        1 | North Canal   |     900 |
+|        2 | Central Canal |     600 |
+|        3 | South Canal   |     300 |
++----------+---------------+---------+
+3 rows in set (0.005 sec)
+
+mysql>
+mysql> SELECT SUM(balance) AS regional_total_tokens
+    -> FROM Canal_Pool;
++-----------------------+
+| regional_total_tokens |
++-----------------------+
+|                  1800 |
++-----------------------+
+1 row in set (0.003 sec)
+
+mysql>
+mysql> COMMIT;
+Query OK, 0 rows affected (0.004 sec)
+
+mysql> SELECT request_id, COUNT(*) AS copies
+    -> FROM Allocation_Ledger
+    -> GROUP BY request_id
+    -> HAVING COUNT(*) > 1;
+Empty set (0.007 sec)
+
+mysql> SELECT CASE
+    ->            WHEN SUM(balance) = 1800 THEN 'PASS'
+    ->            ELSE 'CHECK_INITIAL_TOTAL'
+    ->        END AS conservation_check,
+    ->        SUM(balance) AS current_total
+    -> FROM Canal_Pool;
++--------------------+---------------+
+| conservation_check | current_total |
++--------------------+---------------+
+| PASS               |          1800 |
++--------------------+---------------+
+1 row in set (0.008 sec)
+
+mysql>
+
